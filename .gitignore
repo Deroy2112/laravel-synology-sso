@@ -1,0 +1,30 @@
+# Laravel Package
+/vendor/
+composer.lock
+.phpunit.result.cache
+.phpunit.cache
+
+# IDE
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+/build/
+/dist/
+
+# Coverage reports
+/coverage/
+/.phpunit.cache
+clover.xml
+
+# Environment files
+.env
+.env.testing
+
+# Internal documentation (not for distribution)
+/helpers/
