@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-11-13
+
+### Fixed
+- Corrected all example URLs to include the complete `/webman/sso` path
+- Updated `sso.example.com` to `sso.example.com/webman/sso` throughout documentation and tests
+
+### Added
+- User-friendly instructions for finding the SSO host URL from Synology DSM UI
+- "Finding Your Synology SSO Host URL" section in README.md
+- Helpful tips in docs/CONFIGURATION.md (multiple locations)
+- Setup instructions displayed by `php artisan synology-sso:install` command
+
+### Changed
+- Updated all test configurations to use correct URL format with `/webman/sso` path
+
+## [1.0.1] - 2025-11-13
+
+### Fixed
+- Corrected Synology SSO default group names from "admins" to "administrators" throughout the project
+- Updated group name examples in README.md, configuration, and all documentation files
+- Fixed group mapping examples and comments in config/synology-sso.php
+- Corrected PHPDoc examples in src/GroupRoleMapper.php
+- Updated install command output with correct group names
+- Fixed all test fixtures with correct default group names
+
+### Note
+- This change affects documentation, comments, and test fixtures only
+- No functional code logic changes
+- The correct default groups are "administrators" and "users"
+
+## [1.0.0] - 2025-11-13
+
 ### Added
 - Initial release
 - Socialite driver for Synology SSO Server
@@ -30,10 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSL certificate verification (configurable)
 - Secure session-based token storage
 
-## [1.0.0] - YYYY-MM-DD
-
-### Added
-- First stable release
-
-[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Deroy2112/laravel-synology-sso/releases/tag/v1.0.0
