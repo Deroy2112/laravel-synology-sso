@@ -83,8 +83,8 @@ Route::get('/auth/synology/callback', function () {
     // $user->name        - User's display name
     // $user->email       - User's email
     // $user->groups      - Array of groups:
-    //                      Without Domain/LDAP: ["admins", "users"]
-    //                      With Domain/LDAP:    ["admins@example.com", "users@example.com"]
+    //                      Without Domain/LDAP: ["administrators", "users"]
+    //                      With Domain/LDAP:    ["administrators@example.com", "users@example.com"]
 
     // Find or create user
     $localUser = User::updateOrCreate(
@@ -115,11 +115,11 @@ Edit `config/synology-sso.php`:
 ```php
 'group_role_mappings' => [
     // Without Domain/LDAP (Standard Synology)
-    'admins' => 'admin',
+    'administrators' => 'admin',
     'users' => 'user',
 
     // With Domain/LDAP (if configured)
-    'admins@example.com' => 'admin',
+    'administrators@example.com' => 'admin',
     'users@example.com' => 'user',
 
     // Multiple roles example
@@ -130,8 +130,8 @@ Edit `config/synology-sso.php`:
 ```
 
 **Note:** Group format depends on LDAP configuration:
-- **Without Domain/LDAP**: `admins`, `users`
-- **With Domain/LDAP**: `admins@domain.com`, `users@domain.com`
+- **Without Domain/LDAP**: `administrators`, `users`
+- **With Domain/LDAP**: `administrators@domain.com`, `users@domain.com`
 
 ### Usage in Controller
 
@@ -257,11 +257,11 @@ Expected output:
 
 'allowed_groups' => [
     // Without Domain/LDAP
-    'admins',
+    'administrators',
     'users',
 
     // With Domain/LDAP (optional)
-    'admins@example.com',
+    'administrators@example.com',
     'users@example.com',
 ], // Empty = allow all
 

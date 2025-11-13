@@ -130,7 +130,7 @@ Synology SSO returns groups in **two different formats** depending on LDAP confi
 ```json
 {
   "groups": [
-    "admins",
+    "administrators",
     "users"
   ]
 }
@@ -140,14 +140,14 @@ Synology SSO returns groups in **two different formats** depending on LDAP confi
 ```json
 {
   "groups": [
-    "admins@example.com",
+    "administrators@example.com",
     "users@example.com"
   ]
 }
 ```
 
 ### Important Notes
-- Synology has two default groups: **"admins"** and **"users"**
+- Synology has two default groups: **"administrators"** and **"users"**
 - **Domain/LDAP domains:** Groups include `@domain.com` suffix ONLY when Domain/LDAP is configured
 - **Standard mode:** Groups are simple strings without domain
 - Group names are case-sensitive
@@ -158,7 +158,7 @@ Synology SSO returns groups in **two different formats** depending on LDAP confi
 **Standard Synology (without LDAP):**
 ```php
 'group_role_mappings' => [
-    'admins' => 'admin',      // Default Synology admin group
+    'administrators' => 'admin',      // Default Synology admin group
     'users' => 'user',        // Default Synology user group
 ]
 ```
@@ -166,7 +166,7 @@ Synology SSO returns groups in **two different formats** depending on LDAP confi
 **With Domain/LDAP:**
 ```php
 'group_role_mappings' => [
-    'admins@example.com' => 'admin',      // LDAP admin group
+    'administrators@example.com' => 'admin',      // LDAP admin group
     'users@example.com' => 'user',        // LDAP user group
 ]
 ```
@@ -175,11 +175,11 @@ Synology SSO returns groups in **two different formats** depending on LDAP confi
 ```php
 'group_role_mappings' => [
     // Standard Synology groups
-    'admins' => 'admin',
+    'administrators' => 'admin',
     'users' => 'user',
 
     // Domain/LDAP groups (if Domain/LDAP is enabled)
-    'admins@example.com' => 'admin',
+    'administrators@example.com' => 'admin',
     'users@example.com' => 'user',
 ]
 ```

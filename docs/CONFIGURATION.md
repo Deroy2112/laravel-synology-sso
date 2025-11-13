@@ -53,7 +53,7 @@ Complete guide to configuring Laravel Synology SSO integration.
 1. Open **Control Panel** > **User & Group**
 2. Go to **Group** tab
 3. Synology has two default groups:
-   - `admins` - For administrators (built-in)
+   - `administrators` - For administrators (built-in)
    - `users` - For regular users (built-in)
 4. Create additional groups as needed (e.g., `developers`, `managers`)
 5. Assign users to appropriate groups
@@ -120,7 +120,7 @@ Edit `config/synology-sso.php`:
 **Without Domain/LDAP (Standard Synology):**
 ```php
 'group_role_mappings' => [
-    'admins' => 'admin',        // Synology default admin group
+    'administrators' => 'admin',        // Synology default admin group
     'users' => 'user',          // Synology default user group
     'developers' => 'developer', // Custom group
 ],
@@ -129,7 +129,7 @@ Edit `config/synology-sso.php`:
 **With Domain/LDAP Integration:**
 ```php
 'group_role_mappings' => [
-    'admins@example.com' => 'admin',       // LDAP admin group
+    'administrators@example.com' => 'admin',       // LDAP admin group
     'users@example.com' => 'user',         // LDAP user group
     'developers@example.com' => 'developer', // Custom LDAP group
 ],
@@ -139,17 +139,17 @@ Edit `config/synology-sso.php`:
 ```php
 'group_role_mappings' => [
     // Standard Synology groups (without LDAP)
-    'admins' => 'admin',
+    'administrators' => 'admin',
     'users' => 'user',
 
     // Domain/LDAP groups (with @domain.com)
-    'admins@example.com' => 'admin',
+    'administrators@example.com' => 'admin',
     'users@example.com' => 'user',
 ],
 ```
 
 **Important:**
-- Synology default groups are `admins` and `users` (not "administrators")
+- Synology default groups are `administrators` and `users`
 - **@domain.com suffix**: Only present when Domain/LDAP is configured
 - Replace `@example.com` with your actual Domain/LDAP domain
 
@@ -158,12 +158,12 @@ Edit `config/synology-sso.php`:
 ```php
 'group_role_mappings' => [
     // Without Domain/LDAP
-    'admins' => ['admin', 'user'],
+    'administrators' => ['admin', 'user'],
     'developers' => ['developer', 'user'],
     'users' => 'user',
 
     // With Domain/LDAP (optional, if Domain/LDAP is configured)
-    'admins@example.com' => ['admin', 'user'],
+    'administrators@example.com' => ['admin', 'user'],
     'developers@example.com' => ['developer', 'user'],
     'users@example.com' => 'user',
 ],
@@ -176,7 +176,7 @@ For dynamic configuration via `.env`:
 ```php
 // config/synology-sso.php
 'group_role_mappings' => [
-    env('SYNOLOGY_SSO_ADMIN_GROUP', 'admins') => 'admin',
+    env('SYNOLOGY_SSO_ADMIN_GROUP', 'administrators') => 'admin',
     env('SYNOLOGY_SSO_USER_GROUP', 'users') => 'user',
 ],
 ```
@@ -185,13 +185,13 @@ Then in `.env`:
 
 **Without Domain/LDAP:**
 ```env
-SYNOLOGY_SSO_ADMIN_GROUP=admins
+SYNOLOGY_SSO_ADMIN_GROUP=administrators
 SYNOLOGY_SSO_USER_GROUP=users
 ```
 
 **With Domain/LDAP:**
 ```env
-SYNOLOGY_SSO_ADMIN_GROUP=admins@mycompany.com
+SYNOLOGY_SSO_ADMIN_GROUP=administrators@mycompany.com
 SYNOLOGY_SSO_USER_GROUP=users@mycompany.com
 ```
 
@@ -217,7 +217,7 @@ Only allow specific groups:
 **Without Domain/LDAP:**
 ```php
 'allowed_groups' => [
-    'admins',  // Synology default admin group
+    'administrators',  // Synology default admin group
     'users',   // Synology default user group
 ],
 ```
@@ -225,7 +225,7 @@ Only allow specific groups:
 **With Domain/LDAP:**
 ```php
 'allowed_groups' => [
-    'admins@example.com',  // LDAP admin group
+    'administrators@example.com',  // LDAP admin group
     'users@example.com',   // LDAP user group
 ],
 ```
@@ -559,10 +559,10 @@ SYNOLOGY_SSO_VERIFY_SSL=false
 **Solution:**
 1. Check user's groups in Synology: Control Panel > User & Group
 2. Verify group format:
-   - Without Domain/LDAP: `admins`, `users`
-   - With Domain/LDAP: `admins@example.com`, `users@example.com`
+   - Without Domain/LDAP: `administrators`, `users`
+   - With Domain/LDAP: `administrators@example.com`, `users@example.com`
 3. Check `config/synology-sso.php` mappings match your setup
-4. Remember: Synology default groups are `admins` and `users` (not "administrators")
+4. Remember: Synology default groups are `administrators` and `users` (not "administrators")
 
 ### Debug Mode
 

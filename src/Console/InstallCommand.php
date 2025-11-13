@@ -79,12 +79,12 @@ SYNOLOGY_SSO_CLIENT_ID=your-client-id
 SYNOLOGY_SSO_CLIENT_SECRET=your-client-secret
 SYNOLOGY_SSO_REDIRECT_URI="${APP_URL}/auth/synology/callback"
 
-# Optional: Group to Role Mappings (Synology defaults: "admins" and "users")
+# Optional: Group to Role Mappings (Synology defaults: "administrators" and "users")
 # Without Domain/LDAP:
-# SYNOLOGY_SSO_ADMIN_GROUP=admins
+# SYNOLOGY_SSO_ADMIN_GROUP=administrators
 # SYNOLOGY_SSO_USER_GROUP=users
 # With Domain/LDAP:
-# SYNOLOGY_SSO_ADMIN_GROUP=admins@example.com
+# SYNOLOGY_SSO_ADMIN_GROUP=administrators@example.com
 # SYNOLOGY_SSO_USER_GROUP=users@example.com
 
 # Optional: Default role for users without group mapping

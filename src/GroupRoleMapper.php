@@ -8,8 +8,8 @@ class GroupRoleMapper
      * Map Synology SSO groups to Laravel roles.
      *
      * @param array $groups Synology groups
-     *                      Without Domain/LDAP: ["admins", "users"]
-     *                      With Domain/LDAP:    ["admins@example.com", "users@example.com"]
+     *                      Without Domain/LDAP: ["administrators", "users"]
+     *                      With Domain/LDAP:    ["administrators@example.com", "users@example.com"]
      * @return array Mapped roles (e.g., ["admin", "user"])
      */
     public function mapGroupsToRoles(array $groups): array

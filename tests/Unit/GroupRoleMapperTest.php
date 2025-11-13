@@ -28,11 +28,11 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
             ],
         ]);
 
-        $groups = ['admins@example.com'];
+        $groups = ['administrators@example.com'];
         $roles = $this->mapper->mapGroupsToRoles($groups);
 
         $this->assertEquals(['admin'], $roles);
@@ -43,12 +43,12 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
                 'users@example.com' => 'user',
             ],
         ]);
 
-        $groups = ['admins@example.com', 'users@example.com'];
+        $groups = ['administrators@example.com', 'users@example.com'];
         $roles = $this->mapper->mapGroupsToRoles($groups);
 
         $this->assertEqualsCanonicalizing(['admin', 'user'], $roles);
@@ -59,11 +59,11 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => ['admin', 'user'],
+                'administrators@example.com' => ['admin', 'user'],
             ],
         ]);
 
-        $groups = ['admins@example.com'];
+        $groups = ['administrators@example.com'];
         $roles = $this->mapper->mapGroupsToRoles($groups);
 
         $this->assertEqualsCanonicalizing(['admin', 'user'], $roles);
@@ -74,7 +74,7 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
             ],
         ]);
 
@@ -89,12 +89,12 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => ['admin', 'user'],
+                'administrators@example.com' => ['admin', 'user'],
                 'users@example.com' => 'user',
             ],
         ]);
 
-        $groups = ['admins@example.com', 'users@example.com'];
+        $groups = ['administrators@example.com', 'users@example.com'];
         $roles = $this->mapper->mapGroupsToRoles($groups);
 
         // Should only have 'admin' and 'user' once
@@ -108,13 +108,13 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
                 'users@example.com' => 'user',
             ],
             'synology-sso.role_priority' => ['admin', 'user'],
         ]);
 
-        $groups = ['users@example.com', 'admins@example.com'];
+        $groups = ['users@example.com', 'administrators@example.com'];
         $primaryRole = $this->mapper->getPrimaryRole($groups);
 
         $this->assertEquals('admin', $primaryRole);
@@ -125,7 +125,7 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
             ],
             'synology-sso.default_role' => 'guest',
         ]);
@@ -141,7 +141,7 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
             ],
             'synology-sso.default_role' => null,
         ]);
@@ -155,8 +155,8 @@ class GroupRoleMapperTest extends TestCase
     /** @test */
     public function it_checks_if_user_has_required_group()
     {
-        $userGroups = ['admins@example.com', 'users@example.com'];
-        $requiredGroups = ['admins@example.com'];
+        $userGroups = ['administrators@example.com', 'users@example.com'];
+        $requiredGroups = ['administrators@example.com'];
 
         $hasGroup = $this->mapper->hasRequiredGroup($userGroups, $requiredGroups);
 
@@ -167,7 +167,7 @@ class GroupRoleMapperTest extends TestCase
     public function it_returns_false_when_user_lacks_required_group()
     {
         $userGroups = ['users@example.com'];
-        $requiredGroups = ['admins@example.com'];
+        $requiredGroups = ['administrators@example.com'];
 
         $hasGroup = $this->mapper->hasRequiredGroup($userGroups, $requiredGroups);
 
@@ -189,7 +189,7 @@ class GroupRoleMapperTest extends TestCase
     public function it_grants_access_when_user_has_allowed_group()
     {
         config([
-            'synology-sso.allowed_groups' => ['admins@example.com', 'users@example.com'],
+            'synology-sso.allowed_groups' => ['administrators@example.com', 'users@example.com'],
         ]);
 
         $userGroups = ['users@example.com'];
@@ -202,7 +202,7 @@ class GroupRoleMapperTest extends TestCase
     public function it_denies_access_when_user_lacks_allowed_group()
     {
         config([
-            'synology-sso.allowed_groups' => ['admins@example.com'],
+            'synology-sso.allowed_groups' => ['administrators@example.com'],
         ]);
 
         $userGroups = ['users@example.com'];
@@ -216,13 +216,13 @@ class GroupRoleMapperTest extends TestCase
     {
         config([
             'synology-sso.group_role_mappings' => [
-                'admins@example.com' => 'admin',
+                'administrators@example.com' => 'admin',
                 'users@example.com' => 'user',
             ],
             'synology-sso.role_priority' => ['admin', 'user'],
         ]);
 
-        $groups = ['users@example.com', 'admins@example.com'];
+        $groups = ['users@example.com', 'administrators@example.com'];
         $allRoles = $this->mapper->getAllRoles($groups);
 
         // Primary role (admin) should be first

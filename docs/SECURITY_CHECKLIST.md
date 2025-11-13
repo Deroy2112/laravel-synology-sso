@@ -139,11 +139,11 @@ SYNOLOGY_SSO_VERIFY_SSL=false
 // config/synology-sso.php
 'allowed_groups' => [
     // Without Domain/LDAP
-    'admins',  // Synology default admin group
+    'administrators',  // Synology default admin group
     'users',   // Synology default user group
 
     // With Domain/LDAP (if configured)
-    'admins@example.com',
+    'administrators@example.com',
     'users@example.com',
 ],
 

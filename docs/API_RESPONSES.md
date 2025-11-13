@@ -193,7 +193,7 @@ grant_type=authorization_code
   "sub": "username",
   "email": "user@example.com",
   "email_verified": true,
-  "groups": ["admins", "users"],
+  "groups": ["administrators", "users"],
   "iss": "https://sso.example.com/webman/sso",
   "aud": "your-client-id",
   "exp": 1730000180,
@@ -247,7 +247,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
   "sub": "username",
   "email": "user@example.com",
   "email_verified": true,
-  "groups": ["admins", "users"]
+  "groups": ["administrators", "users"]
 }
 ```
 
@@ -264,7 +264,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
   "sub": "username",
   "email": "user@example.com",
   "email_verified": true,
-  "groups": ["admins@example.com", "users@example.com"]
+  "groups": ["administrators@example.com", "users@example.com"]
 }
 ```
 

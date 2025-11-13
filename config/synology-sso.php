@@ -47,33 +47,33 @@ return [
     |
     | Map Synology SSO groups to Laravel roles/permissions.
     |
-    | Synology default groups: "admins" and "users"
+    | Synology default groups: "administrators" and "users"
     |
     | Group format depends on LDAP configuration:
-    | - Without Domain/LDAP: "admins", "users"
-    | - With Domain/LDAP:    "admins@domain.com", "users@domain.com"
+    | - Without Domain/LDAP: "administrators", "users"
+    | - With Domain/LDAP:    "administrators@domain.com", "users@domain.com"
     |
     | Example (without LDAP):
-    | 'admins' => 'admin',
+    | 'administrators' => 'admin',
     | 'users' => 'user',
     |
     | Example (with LDAP):
-    | 'admins@example.com' => 'admin',
+    | 'administrators@example.com' => 'admin',
     | 'users@example.com' => 'user',
     |
     | Support both (recommended):
-    | 'admins' => 'admin',
-    | 'admins@example.com' => 'admin',
+    | 'administrators' => 'admin',
+    | 'administrators@example.com' => 'admin',
     |
     */
 
     'group_role_mappings' => [
         // Standard Synology groups (without LDAP)
-        // env('SYNOLOGY_SSO_ADMIN_GROUP', 'admins') => 'admin',
+        // env('SYNOLOGY_SSO_ADMIN_GROUP', 'administrators') => 'admin',
         // env('SYNOLOGY_SSO_USER_GROUP', 'users') => 'user',
 
         // Domain/LDAP groups (with @domain.com)
-        // env('SYNOLOGY_SSO_ADMIN_GROUP', 'admins@example.com') => 'admin',
+        // env('SYNOLOGY_SSO_ADMIN_GROUP', 'administrators@example.com') => 'admin',
         // env('SYNOLOGY_SSO_USER_GROUP', 'users@example.com') => 'user',
     ],
 
@@ -113,8 +113,8 @@ return [
     | Restrict access to specific groups. If empty, all authenticated users
     | from Synology SSO are allowed. Set specific groups to restrict access.
     |
-    | Without Domain/LDAP: ['admins', 'users']
-    | With Domain/LDAP:    ['admins@example.com', 'users@example.com']
+    | Without Domain/LDAP: ['administrators', 'users']
+    | With Domain/LDAP:    ['administrators@example.com', 'users@example.com']
     |
     */
 

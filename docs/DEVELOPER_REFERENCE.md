@@ -116,7 +116,7 @@ Authorization: Bearer {ACCESS_TOKEN}
   "sub": "username",
   "email": "user@example.com",
   "email_verified": true,
-  "groups": ["admins", "users"]
+  "groups": ["administrators", "users"]
 }
 ```
 
@@ -178,21 +178,21 @@ GET https://{host}/.well-known/jwks
 **Group Claims (groups scope):**
 ```json
 {
-  "groups": ["admins", "users"]
+  "groups": ["administrators", "users"]
 }
 ```
 
 **Without Domain/LDAP:**
 ```json
 {
-  "groups": ["admins", "users"]
+  "groups": ["administrators", "users"]
 }
 ```
 
 **With Domain/LDAP:**
 ```json
 {
-  "groups": ["admins@example.com", "users@example.com"]
+  "groups": ["administrators@example.com", "users@example.com"]
 }
 ```
 
@@ -700,7 +700,7 @@ class CheckSynologyGroup
 }
 
 // Usage in routes
-Route::middleware(['auth', 'synology.group:admins'])->group(function () {
+Route::middleware(['auth', 'synology.group:administrators'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index']);
 });
 ```
