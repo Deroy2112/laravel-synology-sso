@@ -44,10 +44,26 @@ This will:
 
 ### Step 3: Configure Environment
 
+#### Finding Your Synology SSO Host URL
+
+To get the correct `SYNOLOGY_SSO_HOST` value:
+
+1. Open **DSM** > **SSO Server** > **Services** > **OIDC**
+2. Locate the **Well-Known URL** field
+3. Copy the URL shown (e.g., `https://sso.example.com/webman/sso/.well-known/openid-configuration`)
+4. **Remove** `/.well-known/openid-configuration` from the end
+5. Use the remaining URL as your `SYNOLOGY_SSO_HOST`
+
+**Example:**
+- Well-Known URL: `https://sso.example.com/webman/sso/.well-known/openid-configuration`
+- SYNOLOGY_SSO_HOST: `https://sso.example.com/webman/sso`
+
+#### Environment Variables
+
 Add to your `.env` file:
 
 ```env
-SYNOLOGY_SSO_HOST=https://sso.example.com
+SYNOLOGY_SSO_HOST=https://sso.example.com/webman/sso
 SYNOLOGY_SSO_CLIENT_ID=your-client-id
 SYNOLOGY_SSO_CLIENT_SECRET=your-client-secret
 SYNOLOGY_SSO_REDIRECT_URI="${APP_URL}/auth/synology/callback"

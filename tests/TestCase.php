@@ -17,7 +17,7 @@ abstract class TestCase extends BaseTestCase
     protected function getEnvironmentSetUp($app)
     {
         // Setup default configuration
-        $app['config']->set('synology-sso.host', 'https://sso.example.com');
+        $app['config']->set('synology-sso.host', 'https://sso.example.com/webman/sso');
         $app['config']->set('synology-sso.client_id', 'test-client-id');
         $app['config']->set('synology-sso.client_secret', 'test-client-secret');
         $app['config']->set('synology-sso.redirect_uri', 'https://app.example.com/callback');

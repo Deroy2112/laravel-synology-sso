@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | The base URL of your Synology SSO Server (without trailing slash).
-    | Example: https://sso.example.com
+    | Example: https://sso.example.com/webman/sso
     |
     */
 

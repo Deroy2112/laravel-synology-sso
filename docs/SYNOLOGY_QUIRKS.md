@@ -25,7 +25,7 @@ You can extend token lifetime by manually editing the Synology configuration fil
 **Default content:**
 ```json
 {
-  "BaseURL": "https://sso.example.com",
+  "BaseURL": "https://sso.example.com/webman/sso",
   "Enabled": true,
   "ExpAccessToken": 180,
   "ExpAuthCode": 180,

@@ -69,12 +69,18 @@ class InstallCommand extends Command
     protected function displayEnvTemplate(): void
     {
         $this->newLine();
+        $this->info('Finding your SYNOLOGY_SSO_HOST value:');
+        $this->line('1. Open DSM > SSO Server > Services > OIDC');
+        $this->line('2. Copy the "Well-Known URL"');
+        $this->line('3. Remove "/.well-known/openid-configuration" from the end');
+        $this->line('4. Use the remaining URL (e.g., https://sso.example.com/webman/sso)');
+        $this->newLine();
         $this->info('Add these variables to your .env file:');
         $this->newLine();
 
         $envTemplate = <<<'ENV'
 # Synology SSO Configuration
-SYNOLOGY_SSO_HOST=https://sso.example.com
+SYNOLOGY_SSO_HOST=https://sso.example.com/webman/sso
 SYNOLOGY_SSO_CLIENT_ID=your-client-id
 SYNOLOGY_SSO_CLIENT_SECRET=your-client-secret
 SYNOLOGY_SSO_REDIRECT_URI="${APP_URL}/auth/synology/callback"

@@ -29,8 +29,18 @@ Complete guide to configuring Laravel Synology SSO integration.
 1. Open **SSO Server** from DSM main menu
 2. Go to **Settings** tab
 3. Check **Enable SSO Server**
-4. Set **Base URL** (e.g., `https://sso.example.com`)
+4. Set **Base URL** (e.g., `https://sso.example.com/webman/sso`)
 5. Click **Apply**
+
+> **💡 Finding Your SSO Host URL:**
+> 1. Go to **SSO Server** > **Services** > **OIDC**
+> 2. Copy the **Well-Known URL** field
+> 3. Remove `/.well-known/openid-configuration` from the end
+> 4. The remaining URL is your `SYNOLOGY_SSO_HOST`
+>
+> Example:
+> - Well-Known URL: `https://sso.example.com/webman/sso/.well-known/openid-configuration`
+> - SYNOLOGY_SSO_HOST: `https://sso.example.com/webman/sso`
 
 ### Step 3: Create OAuth Application
 
@@ -71,11 +81,17 @@ php artisan synology-sso:install
 
 ### Step 2: Configure Environment Variables
 
+> **💡 Tip:** To find your `SYNOLOGY_SSO_HOST` value:
+> - Open **DSM** > **SSO Server** > **Services** > **OIDC**
+> - Copy the **Well-Known URL**
+> - Remove `/.well-known/openid-configuration` from the end
+> - Use the remaining URL (e.g., `https://sso.example.com/webman/sso`)
+
 Add to your `.env` file:
 
 ```env
 # Required: Synology SSO Host
-SYNOLOGY_SSO_HOST=https://sso.example.com
+SYNOLOGY_SSO_HOST=https://sso.example.com/webman/sso
 
 # Required: OAuth Credentials (from Synology SSO Server)
 SYNOLOGY_SSO_CLIENT_ID=your-client-id-here
@@ -104,7 +120,7 @@ Run a quick test:
 ```bash
 php artisan tinker
 >>> config('synology-sso.host')
-=> "https://sso.example.com"
+=> "https://sso.example.com/webman/sso"
 >>> config('synology-sso.client_id')
 => "your-client-id-here"
 ```

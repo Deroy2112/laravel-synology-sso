@@ -80,7 +80,7 @@ class PkceTest extends TestCase
         $request = Request::create('/', 'GET');
 
         config([
-            'synology-sso.host' => 'https://sso.example.com',
+            'synology-sso.host' => 'https://sso.example.com/webman/sso',
             'synology-sso.client_id' => 'test-client-id',
             'synology-sso.client_secret' => 'test-secret',
             'synology-sso.redirect_uri' => 'https://app.example.com/callback',
