@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-11-14
+
+### Fixed
+- Added missing `--force` option to `synology-sso:install` command signature
+- The command was using `$this->option('force')` but the option was not defined, causing it to always return null
+
 ## [1.0.2] - 2025-11-13
 
 ### Fixed
@@ -62,7 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSL certificate verification (configurable)
 - Secure session-based token storage
 
-[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Deroy2112/laravel-synology-sso/releases/tag/v1.0.0
