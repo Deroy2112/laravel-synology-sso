@@ -11,7 +11,7 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'synology-sso:install';
+    protected $signature = 'synology-sso:install {--force : Overwrite existing files}';
 
     /**
      * The console command description.
