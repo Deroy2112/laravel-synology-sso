@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- OIDC nonce on the authorization request, verified against the ID token to prevent replay.
+- `UserProvisioner` service for just-in-time user provisioning; `auto_create_users` and `user_model` are now functional.
+- Configurable clock-skew `leeway` for the ID token's time-based claims (`exp`, `iat`).
+
+### Changed
+- The token exchange throws `MissingPkceVerifierException` instead of a generic `RuntimeException` when the session verifier is missing.
+
+### Fixed
+- `verify_ssl` is now honoured on every HTTP request (OIDC discovery, JWKS, token, userinfo). It was previously ignored, so disabling it for self-signed certificates had no effect.
+- `cache_duration` is now used instead of a hardcoded 3600-second TTL.
+- The ID token `aud` claim is accepted as a string or an array of strings (RFC 7519).
+
+### Security
+- Verify the `azp` claim references this client when present.
+
 ## [1.1.0] - 2025-11-14
 
 ### Added
