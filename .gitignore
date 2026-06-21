@@ -4,10 +4,13 @@ composer.lock
 .phpunit.result.cache
 .phpunit.cache
 
+# Claude Code
+CLAUDE.md
+.claude/*
+
 # IDE
 .idea/
 .vscode/
-.claude/
 *.swp
 *.swo
 *~
@@ -28,3 +31,4 @@ clover.xml
 
 # Internal documentation (not for distribution)
 /helpers/
+_helpers/
