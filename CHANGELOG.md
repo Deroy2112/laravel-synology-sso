@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-21
+
 ### Fixed
 - Restore the global `JWT::$leeway` after ID-token verification, so the configured leeway can't leak into other firebase/php-jwt usage in the same process (queue workers, tests).
 
@@ -102,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSL certificate verification (configurable)
 - Secure session-based token storage
 
-[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.2...v1.0.3
