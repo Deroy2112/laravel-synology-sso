@@ -11,7 +11,7 @@ token signature (RS256/JWKS) and claims, and can map Synology groups to your app
 ## Requirements
 
 - PHP 8.2+
-- Laravel 11 or 12
+- Laravel 12 or 13
 - A Synology DSM with the SSO Server package, reachable over HTTPS
 
 ## Installation
