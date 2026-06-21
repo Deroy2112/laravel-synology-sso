@@ -19,6 +19,7 @@ class SynologySsoServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(GroupRoleMapper::class);
+        $this->app->singleton(UserProvisioner::class);
     }
 
     /**
