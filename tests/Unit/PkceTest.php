@@ -6,6 +6,7 @@ use Orchestra\Testbench\TestCase;
 use Deroy2112\LaravelSynologySso\SynologySocialiteDriver;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Two\User;
+use PHPUnit\Framework\Attributes\Test;
 
 class PkceTest extends TestCase
 {
@@ -17,7 +18,7 @@ class PkceTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_valid_pkce_verifier_and_challenge()
     {
         // Use reflection to access protected method
@@ -37,7 +38,7 @@ class PkceTest extends TestCase
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]{43}$/', $pkce['challenge']);
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_unique_pkce_values()
     {
         $driver = $this->createDriver();
@@ -53,7 +54,7 @@ class PkceTest extends TestCase
         $this->assertNotEquals($pkce1['challenge'], $pkce2['challenge']);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_valid_sha256_challenge_from_verifier()
     {
         $driver = $this->createDriver();

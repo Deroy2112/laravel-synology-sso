@@ -4,6 +4,7 @@ namespace Deroy2112\LaravelSynologySso\Tests\Unit;
 
 use Deroy2112\LaravelSynologySso\GroupRoleMapper;
 use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class GroupRoleMapperTest extends TestCase
 {
@@ -23,7 +24,7 @@ class GroupRoleMapperTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function it_maps_single_group_to_single_role()
     {
         config([
@@ -38,7 +39,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertEquals(['admin'], $roles);
     }
 
-    /** @test */
+    #[Test]
     public function it_maps_multiple_groups_to_multiple_roles()
     {
         config([
@@ -54,7 +55,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertEqualsCanonicalizing(['admin', 'user'], $roles);
     }
 
-    /** @test */
+    #[Test]
     public function it_maps_single_group_to_multiple_roles()
     {
         config([
@@ -69,7 +70,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertEqualsCanonicalizing(['admin', 'user'], $roles);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_empty_array_for_unmapped_groups()
     {
         config([
@@ -84,7 +85,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertEquals([], $roles);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_unique_roles()
     {
         config([
@@ -103,7 +104,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertContains('user', $roles);
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_primary_role_from_groups()
     {
         config([
@@ -120,7 +121,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertEquals('admin', $primaryRole);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_default_role_when_no_groups_matched()
     {
         config([
@@ -136,7 +137,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertEquals('guest', $primaryRole);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_null_when_no_default_role_set()
     {
         config([
@@ -152,7 +153,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertNull($primaryRole);
     }
 
-    /** @test */
+    #[Test]
     public function it_checks_if_user_has_required_group()
     {
         $userGroups = ['administrators@example.com', 'users@example.com'];
@@ -163,7 +164,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertTrue($hasGroup);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_false_when_user_lacks_required_group()
     {
         $userGroups = ['users@example.com'];
@@ -174,7 +175,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertFalse($hasGroup);
     }
 
-    /** @test */
+    #[Test]
     public function it_grants_access_when_no_allowed_groups_configured()
     {
         config(['synology-sso.allowed_groups' => []]);
@@ -185,7 +186,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertTrue($hasAccess);
     }
 
-    /** @test */
+    #[Test]
     public function it_grants_access_when_user_has_allowed_group()
     {
         config([
@@ -198,7 +199,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertTrue($hasAccess);
     }
 
-    /** @test */
+    #[Test]
     public function it_denies_access_when_user_lacks_allowed_group()
     {
         config([
@@ -211,7 +212,7 @@ class GroupRoleMapperTest extends TestCase
         $this->assertFalse($hasAccess);
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_all_roles_with_primary_first()
     {
         config([
