@@ -43,6 +43,40 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
     protected $oidcConfig;
 
     /**
+     * Shared HTTP client configured with the package's TLS settings.
+     */
+    protected ?Client $synologyClient = null;
+
+    /**
+     * Fallback cache TTL (seconds) for OIDC discovery and JWKS.
+     */
+    private const DEFAULT_CACHE_TTL = 3600;
+
+    /**
+     * Guzzle options applied to every request the driver makes.
+     *
+     * @return array<string, mixed>
+     */
+    protected function httpClientOptions(): array
+    {
+        return [
+            'verify' => config('synology-sso.verify_ssl', true),
+        ];
+    }
+
+    /**
+     * Get the shared, TLS-configured HTTP client used for all Synology requests.
+     */
+    protected function synologyHttpClient(): Client
+    {
+        if ($this->synologyClient === null) {
+            $this->synologyClient = new Client($this->httpClientOptions());
+        }
+
+        return $this->synologyClient;
+    }
+
+    /**
      * Get the OIDC discovery configuration.
      *
      * @return array
@@ -56,9 +90,10 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
         $baseUrl = rtrim(config('synology-sso.host'), '/');
         $cacheKey = 'synology_sso_oidc_config_' . md5($baseUrl);
 
-        $this->oidcConfig = Cache::remember($cacheKey, 3600, function () use ($baseUrl) {
-            $client = new Client();
-            $response = $client->get($baseUrl . '/.well-known/openid-configuration');
+        $ttl = (int) config('synology-sso.cache_duration', self::DEFAULT_CACHE_TTL);
+
+        $this->oidcConfig = Cache::remember($cacheKey, $ttl, function () use ($baseUrl) {
+            $response = $this->synologyHttpClient()->get($baseUrl . '/.well-known/openid-configuration');
 
             return json_decode($response->getBody()->getContents(), true);
         });
@@ -141,7 +176,7 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
             throw new \RuntimeException('PKCE code verifier not found in session');
         }
 
-        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+        $response = $this->synologyHttpClient()->post($this->getTokenUrl(), [
             'form_params' => $this->getTokenFields($code),
         ]);
 
@@ -179,7 +214,7 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
      */
     protected function getUserByToken($token): array
     {
-        $response = $this->getHttpClient()->get($this->getUserByTokenUrl(), [
+        $response = $this->synologyHttpClient()->get($this->getUserByTokenUrl(), [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
             ],
@@ -202,9 +237,10 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
 
         // Fetch JWKS (with caching)
         $cacheKey = 'synology_sso_jwks_' . md5($jwksUri);
-        $jwks = Cache::remember($cacheKey, 3600, function () use ($jwksUri) {
-            $client = new Client();
-            $response = $client->get($jwksUri);
+        $ttl = (int) config('synology-sso.cache_duration', self::DEFAULT_CACHE_TTL);
+
+        $jwks = Cache::remember($cacheKey, $ttl, function () use ($jwksUri) {
+            $response = $this->synologyHttpClient()->get($jwksUri);
             return json_decode($response->getBody()->getContents(), true);
         });
 

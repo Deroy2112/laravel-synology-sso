@@ -21,4 +21,12 @@ final class TestableSynologyDriver extends SynologySocialiteDriver
     {
         return $this->verifyIdToken($idToken);
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function callHttpClientOptions(): array
+    {
+        return $this->httpClientOptions();
+    }
 }
