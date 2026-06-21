@@ -34,4 +34,12 @@ final class TestableSynologyDriver extends SynologySocialiteDriver
     {
         return $this->getAuthUrl($state);
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function callGetAccessTokenResponse(string $code): array
+    {
+        return $this->getAccessTokenResponse($code);
+    }
 }

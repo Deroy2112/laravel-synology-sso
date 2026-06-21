@@ -11,6 +11,7 @@ use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
 use Deroy2112\LaravelSynologySso\Exceptions\InvalidIdTokenException;
+use Deroy2112\LaravelSynologySso\Exceptions\MissingPkceVerifierException;
 
 class SynologySocialiteDriver extends AbstractProvider implements ProviderInterface
 {
@@ -189,7 +190,9 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
         $codeVerifier = session('synology_sso_code_verifier');
 
         if (!$codeVerifier) {
-            throw new \RuntimeException('PKCE code verifier not found in session');
+            throw new MissingPkceVerifierException(
+                'PKCE code verifier missing from session; the authorization request may have expired or the session was lost.'
+            );
         }
 
         $response = $this->synologyHttpClient()->post($this->getTokenUrl(), [
