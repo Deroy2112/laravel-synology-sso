@@ -188,4 +188,18 @@ return [
 
     'cache_duration' => env('SYNOLOGY_SSO_CACHE_DURATION', 3600),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Clock Skew Leeway
+    |--------------------------------------------------------------------------
+    |
+    | Tolerance (in seconds) for clock differences between the Synology NAS and
+    | this application when validating the ID token's time-based claims (exp,
+    | iat, nbf). Given the short 180s token lifetime, a small leeway avoids
+    | spurious "token expired" / "used before issued" failures.
+    |
+    */
+
+    'leeway' => env('SYNOLOGY_SSO_LEEWAY', 60),
+
 ];

@@ -137,6 +137,68 @@ class IdTokenVerificationTest extends TestCase
     }
 
     #[Test]
+    public function it_accepts_a_token_whose_audience_array_contains_this_client(): void
+    {
+        $token = $this->key->sign($this->claims([
+            'aud' => ['some-other-client', self::CLIENT_ID],
+        ]));
+
+        $claims = $this->driver->callVerifyIdToken($token);
+
+        $this->assertSame('synology-user-123', $claims['sub']);
+    }
+
+    #[Test]
+    public function it_rejects_a_token_whose_audience_array_excludes_this_client(): void
+    {
+        $token = $this->key->sign($this->claims([
+            'aud' => ['client-a', 'client-b'],
+        ]));
+
+        $this->expectException(InvalidIdTokenException::class);
+        $this->expectExceptionMessage('Invalid audience');
+
+        $this->driver->callVerifyIdToken($token);
+    }
+
+    #[Test]
+    public function it_rejects_a_token_with_an_authorized_party_for_another_client(): void
+    {
+        $token = $this->key->sign($this->claims([
+            'aud' => self::CLIENT_ID,
+            'azp' => 'some-other-client',
+        ]));
+
+        $this->expectException(InvalidIdTokenException::class);
+        $this->expectExceptionMessage('Invalid authorized party');
+
+        $this->driver->callVerifyIdToken($token);
+    }
+
+    #[Test]
+    public function it_accepts_a_token_issued_slightly_in_the_future_within_leeway(): void
+    {
+        $token = $this->key->sign($this->claims(['iat' => time() + 30]));
+
+        $claims = $this->driver->callVerifyIdToken($token);
+
+        $this->assertSame('synology-user-123', $claims['sub']);
+    }
+
+    #[Test]
+    public function it_accepts_a_token_that_just_expired_within_leeway(): void
+    {
+        $token = $this->key->sign($this->claims([
+            'iat' => time() - 200,
+            'exp' => time() - 30,
+        ]));
+
+        $claims = $this->driver->callVerifyIdToken($token);
+
+        $this->assertSame('synology-user-123', $claims['sub']);
+    }
+
+    #[Test]
     public function it_rejects_a_token_signed_by_an_unknown_key(): void
     {
         $foreignKey = new RsaTestKey('attacker-key');

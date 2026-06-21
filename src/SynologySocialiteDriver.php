@@ -53,6 +53,12 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
     private const DEFAULT_CACHE_TTL = 3600;
 
     /**
+     * Default tolerance (seconds) for clock skew between the NAS and this app
+     * when checking time-based ID token claims.
+     */
+    private const DEFAULT_CLOCK_SKEW_LEEWAY = 60;
+
+    /**
      * Guzzle options applied to every request the driver makes.
      *
      * @return array<string, mixed>
@@ -244,13 +250,16 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
             return json_decode($response->getBody()->getContents(), true);
         });
 
+        $leeway = (int) config('synology-sso.leeway', self::DEFAULT_CLOCK_SKEW_LEEWAY);
+
         try {
-            // Parse and verify JWT signature with JWKS
+            // Parse and verify JWT signature with JWKS, tolerating minor clock skew
+            JWT::$leeway = $leeway;
             $decoded = JWT::decode($idToken, JWK::parseKeySet($jwks));
             $claims = (array) $decoded;
 
             // Verify claims
-            $this->verifyIdTokenClaims($claims, $config);
+            $this->verifyIdTokenClaims($claims, $config, $leeway);
 
             return $claims;
         } catch (\Exception $e) {
@@ -263,28 +272,36 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
      *
      * @param array $claims
      * @param array $config
+     * @param int $leeway Tolerance in seconds for clock skew on time-based claims.
      * @return void
      * @throws InvalidIdTokenException
      */
-    protected function verifyIdTokenClaims(array $claims, array $config): void
+    protected function verifyIdTokenClaims(array $claims, array $config, int $leeway = 0): void
     {
         // Verify issuer
         if (!isset($claims['iss']) || $claims['iss'] !== $config['issuer']) {
             throw new InvalidIdTokenException('Invalid issuer');
         }
 
-        // Verify audience
-        if (!isset($claims['aud']) || $claims['aud'] !== $this->clientId) {
+        // Verify audience. The aud claim may be a single string or an array of
+        // strings (RFC 7519); this client must be among them.
+        $audiences = isset($claims['aud']) ? (array) $claims['aud'] : [];
+        if (!in_array($this->clientId, $audiences, true)) {
             throw new InvalidIdTokenException('Invalid audience');
         }
 
+        // Verify authorized party: when present it must reference this client.
+        if (isset($claims['azp']) && $claims['azp'] !== $this->clientId) {
+            throw new InvalidIdTokenException('Invalid authorized party');
+        }
+
         // Verify expiration
-        if (!isset($claims['exp']) || $claims['exp'] < time()) {
+        if (!isset($claims['exp']) || $claims['exp'] < (time() - $leeway)) {
             throw new InvalidIdTokenException('Token expired');
         }
 
         // Verify issued at
-        if (!isset($claims['iat']) || $claims['iat'] > time()) {
+        if (!isset($claims['iat']) || $claims['iat'] > (time() + $leeway)) {
             throw new InvalidIdTokenException('Token used before issued');
         }
 
