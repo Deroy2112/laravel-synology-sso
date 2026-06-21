@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Minimal Eloquent model standing in for a consumer's User model in
  * provisioning tests.
+ *
+ * @property int $id
+ * @property string|null $name
+ * @property string $email
  */
 final class TestUser extends Model
 {

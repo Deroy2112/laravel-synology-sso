@@ -73,6 +73,7 @@ class UserProvisionerTest extends TestCase
 
         $user = $this->provisioner()->provision($this->ssoUser('jane@example.com', 'New Name'));
 
+        $this->assertInstanceOf(TestUser::class, $user);
         $this->assertSame('New Name', $user->name);
         $this->assertSame(1, TestUser::query()->count());
     }
@@ -96,6 +97,7 @@ class UserProvisionerTest extends TestCase
 
         $user = $this->provisioner()->provision($this->ssoUser('jane@example.com', 'New Name'));
 
+        $this->assertInstanceOf(TestUser::class, $user);
         $this->assertSame('New Name', $user->name);
     }
 
