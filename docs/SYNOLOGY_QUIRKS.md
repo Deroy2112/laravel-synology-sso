@@ -1,28 +1,21 @@
 # Synology SSO Quirks & Limitations
 
-This document describes important quirks, limitations, and workarounds when working with Synology SSO Server.
+Known quirks, limitations, and workarounds for Synology SSO Server. These are
+properties of the server, not bugs in this package.
 
-## 1. Token Lifetime (180 Second Default)
+## 1. Token lifetime (180s default)
 
-### The Issue
-By design, Synology SSO Server sets all OAuth tokens to expire after **180 seconds (3 minutes)**:
+All OAuth tokens expire after **180 seconds** by default:
+
 - `access_token`: 180s
 - `id_token`: 180s
 - `authorization_code`: 180s
 
-This short lifetime is hardcoded and cannot be changed via the SSO Server UI or API.
-
-### The Impact
-- Users must re-authenticate every 3 minutes
-- No refresh tokens are available (see section 2)
-- Applications must handle frequent re-authentication
-
-### The Workaround
-You can extend token lifetime by manually editing the Synology configuration file:
+This is hardcoded and cannot be changed through the SSO Server UI or API — only
+by editing the config file on the NAS (root required):
 
 **File:** `/var/packages/SSOServer/etc/oidc-config.json`
 
-**Default content:**
 ```json
 {
   "BaseURL": "https://sso.example.com/webman/sso",
@@ -33,347 +26,129 @@ You can extend token lifetime by manually editing the Synology configuration fil
 }
 ```
 
-**Steps to extend (requires root access):**
+Raise the three `Exp*` values (max 1800) and restart the package. A one-time DSM
+Task Scheduler script (run as root) is the convenient way:
 
-1. **Check SSO Server is installed:**
-   ```bash
-   synopkg list | grep SSOServer
-   ```
-   Should output: `SSOServer-3.0.6-0485: SSO Server provides...`
-
-2. **Create automated script via DSM Task Scheduler:**
-   - Open DSM > Control Panel > Task Scheduler
-   - Create > Scheduled Task > User-defined script
-   - User: root
-   - Schedule: Run on the following date > Do not repeat
-   - Task Settings > User-defined script:
-
-   ```bash
-   #!/bin/bash
-
-   # Extend Synology SSO token lifetime to 30 minutes (1800 seconds)
-   sed -i 's/"ExpAccessToken":180/"ExpAccessToken":1800/g' /var/packages/SSOServer/etc/oidc-config.json
-   sed -i 's/"ExpIdToken":180/"ExpIdToken":1800/g' /var/packages/SSOServer/etc/oidc-config.json
-   sed -i 's/"ExpAuthCode":180/"ExpAuthCode":1800/g' /var/packages/SSOServer/etc/oidc-config.json
-
-   # Restart SSO Server to apply changes
-   synopkg restart SSOServer
-   ```
-
-3. **Run the task immediately** (right-click > Run)
-
-**Recommended Values:**
-- Development: 1800 seconds (30 minutes)
-- Production: 600-900 seconds (10-15 minutes)
-- Maximum: 1800 seconds
-
-**Important Notes:**
-- Changes persist across reboots
-- DSM updates may reset the file (re-run script after updates)
-- Longer tokens = convenience vs. security tradeoff
-
----
-
-## 2. No Refresh Tokens
-
-### The Issue
-Synology SSO Server does **not issue refresh tokens**, even when requested with `offline_access` scope.
-
-**Confirmed via testing:**
-- `refresh_token` NOT advertised in `grant_types_supported`
-- `offline_access` scope NOT advertised in `scopes_supported`
-- Token endpoint returns `invalid request` when attempting refresh grant
-- Extensive testing confirms: **NO refresh token support**
-
-### The Impact
-- Cannot silently renew access tokens
-- Users must re-authenticate when tokens expire
-- No persistent sessions without cookies
-- Long-lived sessions impossible without token lifetime extension
-
-### Workarounds
-1. **Extend token lifetime** (see section 1) - **RECOMMENDED**
-2. **Use silent authentication** (see section 3) - limited by browser cookie policies
-3. **Accept frequent re-authentication** - most secure but poor UX
-
----
-
-## 3. Silent Authentication (`prompt=none`) Limitations
-
-### The Issue
-Silent token renewal using `prompt=none` requires third-party cookies, which are:
-- Blocked by default in Safari
-- Blocked by default in Firefox with Enhanced Tracking Protection
-- Being phased out in Chrome (2024+)
-
-### The Impact
-Silent authentication fails in most modern browsers, showing:
-- "interaction_required" error
-- User must manually re-authenticate
-
-### Recommendation
-**Do not rely on `prompt=none` for production applications.**
-
-Instead:
-1. Extend token lifetime via configuration (section 1)
-2. Implement graceful re-authentication UI
-3. Use session-based authentication (store tokens server-side)
-
----
-
-## 4. Groups Format
-
-### The Issue
-Synology SSO returns groups in **two different formats** depending on LDAP configuration:
-
-**Without Domain/LDAP (Standard Synology Groups):**
-```json
-{
-  "groups": [
-    "administrators",
-    "users"
-  ]
-}
+```bash
+#!/bin/bash
+sed -i 's/"ExpAccessToken":180/"ExpAccessToken":1800/g' /var/packages/SSOServer/etc/oidc-config.json
+sed -i 's/"ExpIdToken":180/"ExpIdToken":1800/g' /var/packages/SSOServer/etc/oidc-config.json
+sed -i 's/"ExpAuthCode":180/"ExpAuthCode":1800/g' /var/packages/SSOServer/etc/oidc-config.json
+synopkg restart SSOServer
 ```
 
-**With Domain/LDAP Integration:**
-```json
-{
-  "groups": [
-    "administrators@example.com",
-    "users@example.com"
-  ]
-}
-```
+Suggested values: 1800s (30 min) for dev, 600–900s for production, 1800s max.
+Changes persist across reboots but may be reset by DSM updates — re-run after an
+update.
 
-### Important Notes
-- Synology has two default groups: **"administrators"** and **"users"**
-- **Domain/LDAP domains:** Groups include `@domain.com` suffix ONLY when Domain/LDAP is configured
-- **Standard mode:** Groups are simple strings without domain
-- Group names are case-sensitive
-- Empty groups array `[]` means user has no groups
+## 2. No refresh tokens
 
-### Best Practices
+Synology SSO does **not** issue refresh tokens, even when `offline_access` is
+requested:
 
-**Standard Synology (without LDAP):**
-```php
-'group_role_mappings' => [
-    'administrators' => 'admin',      // Default Synology admin group
-    'users' => 'user',        // Default Synology user group
-]
-```
+- `refresh_token` is not in `grant_types_supported`
+- `offline_access` is not in `scopes_supported`
+- The token endpoint returns `invalid request` for a refresh grant
 
-**With Domain/LDAP:**
-```php
-'group_role_mappings' => [
-    'administrators@example.com' => 'admin',      // LDAP admin group
-    'users@example.com' => 'user',        // LDAP user group
-]
-```
+There is no silent token renewal. Either extend the token lifetime (section 1)
+or accept re-authentication when tokens expire.
 
-**Supporting Both (Recommended):**
-```php
-'group_role_mappings' => [
-    // Standard Synology groups
-    'administrators' => 'admin',
-    'users' => 'user',
+## 3. Silent auth (`prompt=none`) is unreliable
 
-    // Domain/LDAP groups (if Domain/LDAP is enabled)
-    'administrators@example.com' => 'admin',
-    'users@example.com' => 'user',
-]
-```
+Silent renewal via `prompt=none` needs third-party cookies, which are blocked by
+default in Safari and Firefox (ETP) and being phased out in Chrome. It typically
+fails with `interaction_required`. Do not rely on it in production; extend token
+lifetime and implement a graceful re-auth UI instead.
 
----
+## 4. Groups format depends on LDAP
 
-## 5. OIDC Discovery Endpoint
+The `groups` claim has two forms:
 
-### The Issue
-Synology SSO provides standard OIDC discovery at:
+- **Without Domain/LDAP:** bare names — `["administrators", "users"]`
+- **With Domain/LDAP:** suffixed — `["administrators@example.com", "users@example.com"]`
+
+Notes:
+
+- Synology's two built-in groups are `administrators` and `users`.
+- The `@domain.com` suffix appears only when Domain/LDAP is configured.
+- Group names are case-sensitive.
+- An empty array `[]` means the user has no groups.
+
+Map both forms if you support both setups (replace `@example.com` with your real
+domain).
+
+## 5. OIDC discovery
+
+Standard discovery is served at:
+
 ```
 https://sso.example.com/.well-known/openid-configuration
 ```
 
-However:
-- Discovery document is not cached by Synology
-- Each request fetches fresh data (no ETag/Last-Modified)
-- Can cause performance issues with frequent calls
+Synology does not cache the discovery document (no ETag/Last-Modified), so
+frequent fetches hit the server each time. This package caches it for 1 hour
+(`cache_duration`).
 
-### Recommendation
-This package automatically caches the discovery document for 1 hour (configurable):
+## 6. JWKS
 
-```php
-'cache_duration' => env('SYNOLOGY_SSO_CACHE_DURATION', 3600),
-```
+ID tokens are signed with RS256; verification uses the JWKS endpoint
+(`jwks_uri` from discovery). Keys can rotate (rare, e.g. after updates). This
+package fetches and caches JWKS for 1 hour and verifies the RS256 signature plus
+the standard claims (`iss`, `aud`, `exp`, `iat`, `sub`).
 
----
+## 7. Supported scopes
 
-## 6. JWKS (JSON Web Key Set)
+Only three scopes are advertised in `scopes_supported`: `openid`, `email`,
+`groups`.
 
-### The Issue
-ID tokens are signed with RS256 and require JWKS for verification.
+- `openid` (required): basic ID token (`sub`, `iss`, `aud`, `exp`, `iat`).
+- `email` (optional): adds `email` and `email_verified`.
+- `groups` (optional): adds the `groups` array (format per section 4).
 
-Endpoint: `https://sso.example.com/.well-known/jwks`
+Not supported: `offline_access` (no effect, no refresh token), `profile`,
+`address`, `phone` — none are advertised.
 
-### Important Notes
-- JWKS contains public keys for signature verification
-- Keys may rotate (rare, but possible after updates)
-- This package caches JWKS for 1 hour
+## 8. Client authentication
 
-### What This Package Does
-- Automatically fetches and caches JWKS
-- Verifies ID token signatures using RS256
-- Validates standard claims (iss, aud, exp, iat, sub)
+The token endpoint is used with `client_secret_post` (credentials in the request
+body). `client_secret_basic`, `private_key_jwt`, and `none` are not used by this
+package.
 
----
+## 9. PKCE
 
-## 7. Supported Scopes
+Synology supports PKCE per RFC 7636: `code_challenge_methods_supported` is
+`["S256", "plain"]`, verifier length 43–128, and PKCE is optional
+(backward-compatible). This package always uses S256 with a 32-byte verifier
+(hex-encoded, 64 chars) and a base64url SHA-256 challenge.
 
-### Available Scopes
-Synology SSO Server supports only **3 standard OIDC scopes**:
+## 10. SSL certificate validation
 
-**Confirmed via testing:**
-```json
-{
-  "scopes_supported": [
-    "openid",
-    "email",
-    "groups"
-  ]
-}
-```
+Self-signed certificates are common in development and cause verification errors.
+For development only, set `SYNOLOGY_SSO_VERIFY_SSL=false`. Never disable it in
+production.
 
-### Scope Behavior
+## 11. Redirect URI matching
 
-**`openid` (Required):**
-- Enables OIDC authentication
-- Returns basic ID token with `sub`, `iss`, `aud`, `exp`, `iat`
+Synology requires an **exact** match on protocol, domain/subdomain, port, path,
+and trailing slash. For example, a registered `…/auth/callback` will reject a
+request to `…/auth/callback/` with `redirect_uri_mismatch`. Drive the value from
+config (`SYNOLOGY_SSO_REDIRECT_URI="${APP_URL}/auth/synology/callback"`) and
+register one URI per environment.
 
-**`email` (Optional):**
-- Adds `email` and `email_verified` claims to ID token
-- Available via UserInfo endpoint
+## Summary
 
-**`groups` (Optional):**
-- Adds `groups` array to ID token
-- Format depends on Domain/LDAP configuration (see section 4)
-- Available via UserInfo endpoint
+| Feature | Synology SSO | Notes |
+|---------|--------------|-------|
+| Refresh tokens | Not supported | Extend access token lifetime |
+| Token lifetime | 180s default | Edit `oidc-config.json` + restart |
+| Silent auth | Needs 3rd-party cookies | Unreliable; extend tokens |
+| PKCE S256 | Supported | Always enabled here |
+| Scopes | `openid`, `email`, `groups` only | — |
+| Groups | Supported | Bare or `@domain` form |
+| OIDC discovery | Supported | Cached by this package |
+| RS256 ID tokens | Supported | Verified via JWKS |
 
-**`offline_access` (Not Supported):**
-- ❌ NOT in `scopes_supported`
-- ❌ Does NOT trigger refresh token issuance
-- Requesting this scope has no effect
+## References
 
-**Other standard scopes (Not Supported):**
-- ❌ `profile` - not advertised
-- ❌ `address` - not advertised
-- ❌ `phone` - not advertised
-
-### Recommended Scope Combination
-```php
-'scopes' => ['openid', 'email', 'groups']
-```
-
----
-
-## 8. Client Authentication Method
-
-### The Issue
-Synology SSO only supports `client_secret_post` for token endpoint authentication.
-
-**Not supported:**
-- `client_secret_basic` (HTTP Basic Auth)
-- `private_key_jwt`
-- `none` (public clients without PKCE alone)
-
-### What This Package Does
-Uses `client_secret_post` by default (credentials in request body).
-
----
-
-## 9. PKCE Support
-
-### Full PKCE S256 Support Confirmed
-Synology SSO Server **fully supports** PKCE (Proof Key for Code Exchange) per RFC 7636.
-
-**Confirmed via testing:**
-- ✅ `S256` method advertised and working
-- ✅ `plain` method advertised (less secure, not recommended)
-- ✅ `code_challenge_methods_supported: ["S256", "plain"]`
-- ✅ Verifier length 43-128 characters supported
-- ✅ PKCE is optional (backward compatible)
-
-### What This Package Does
-**Always uses PKCE S256:**
-- Generates cryptographically secure 32-byte verifier (hex-encoded = 64 chars)
-- Creates SHA-256 code challenge with base64url encoding
-- Protects against authorization code interception attacks
-- **Mandatory for public clients** (SPAs, mobile apps)
-- **Recommended for all clients** (defense in depth)
-
-**RFC 7636 compliant implementation.**
-
----
-
-## 10. SSL Certificate Validation
-
-### Development Issue
-Self-signed certificates are common in development but cause SSL verification errors.
-
-### Solution
-For **development only**, disable SSL verification:
-
-```env
-SYNOLOGY_SSO_VERIFY_SSL=false
-```
-
-**⚠️ Never disable in production!**
-
----
-
-## 11. Redirect URI Matching
-
-### The Issue
-Synology SSO requires **exact match** of redirect URI:
-- Protocol (`http` vs `https`)
-- Domain/subdomain
-- Port (`:8000` vs `:80`)
-- Path (`/callback` vs `/callback/`)
-- Trailing slash
-
-### Common Mistakes
-```
-Configured: https://app.example.com/auth/callback
-Request:    https://app.example.com/auth/callback/
-Result:     ❌ redirect_uri_mismatch
-```
-
-### Best Practice
-1. Use environment variables:
-   ```env
-   SYNOLOGY_SSO_REDIRECT_URI="${APP_URL}/auth/synology/callback"
-   ```
-
-2. Register multiple URIs in Synology for different environments
-
----
-
-## Summary Table
-
-| Feature | Synology SSO | Workaround |
-|---------|--------------|------------|
-| Refresh Tokens | ❌ Not supported | Extend access token lifetime |
-| Token Lifetime | ⚠️ 180s default | Edit config file + restart |
-| Silent Auth | ⚠️ Requires 3rd-party cookies | Not reliable, extend tokens |
-| PKCE S256 | ✅ Fully supported | Always enabled in this package |
-| Scopes | ⚠️ Only 3 scopes | `openid`, `email`, `groups` |
-| Groups | ✅ Supported | Format varies (w/ or w/o domain) |
-| OIDC Discovery | ✅ Supported | Cached by this package |
-| RS256 ID Tokens | ✅ Supported | Verified via JWKS |
-
----
-
-## Need Help?
-
-- Package Issues: https://github.com/Deroy2112/laravel-synology-sso/issues
-- Synology SSO Docs: Check your DSM Help Center
-- OIDC Specs: https://openid.net/specs/openid-connect-core-1_0.html
+- OpenID Connect Core 1.0 — https://openid.net/specs/openid-connect-core-1_0.html
+- Package issues — https://github.com/Deroy2112/laravel-synology-sso/issues

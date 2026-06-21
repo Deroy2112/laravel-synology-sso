@@ -1,606 +1,141 @@
 # Configuration Guide
 
-Complete guide to configuring Laravel Synology SSO integration.
+Setting up Synology SSO Server and configuring this package.
 
-## Table of Contents
+## Synology SSO Server setup
 
-1. [Synology SSO Server Setup](#synology-sso-server-setup)
-2. [Laravel Environment Configuration](#laravel-environment-configuration)
-3. [Group-to-Role Mapping](#group-to-role-mapping)
-4. [Extending Token Lifetime](#extending-token-lifetime)
-5. [Routes Configuration](#routes-configuration)
-6. [User Model Setup](#user-model-setup)
-7. [Advanced Configuration](#advanced-configuration)
-8. [Troubleshooting](#troubleshooting)
+### 1. Install and enable
 
----
+1. **Package Center** → search **SSO Server** → install.
+2. Open **SSO Server** → **Settings** → check **Enable SSO Server**.
+3. Set the **Base URL** (e.g. `https://sso.example.com/webman/sso`) → **Apply**.
 
-## Synology SSO Server Setup
+### 2. Find your host URL
 
-### Step 1: Install SSO Server Package
+Under **SSO Server → Services → OIDC**, copy the **Well-Known URL** and remove
+the trailing `/.well-known/openid-configuration`. The remainder is your
+`SYNOLOGY_SSO_HOST`:
 
-1. Open **Package Center** in DSM
-2. Search for **SSO Server**
-3. Click **Install**
-4. Follow the installation wizard
+- Well-Known URL: `https://sso.example.com/webman/sso/.well-known/openid-configuration`
+- `SYNOLOGY_SSO_HOST`: `https://sso.example.com/webman/sso`
 
-### Step 2: Enable SSO Server
+### 3. Create the OAuth client
 
-1. Open **SSO Server** from DSM main menu
-2. Go to **Settings** tab
-3. Check **Enable SSO Server**
-4. Set **Base URL** (e.g., `https://sso.example.com/webman/sso`)
-5. Click **Apply**
+**Application Portal** → **Create** → **OAuth 2.0 Client**:
 
-> **💡 Finding Your SSO Host URL:**
-> 1. Go to **SSO Server** > **Services** > **OIDC**
-> 2. Copy the **Well-Known URL** field
-> 3. Remove `/.well-known/openid-configuration` from the end
-> 4. The remaining URL is your `SYNOLOGY_SSO_HOST`
->
-> Example:
-> - Well-Known URL: `https://sso.example.com/webman/sso/.well-known/openid-configuration`
-> - SYNOLOGY_SSO_HOST: `https://sso.example.com/webman/sso`
+| Field | Value |
+|-------|-------|
+| Name | Your application name |
+| Application Type | Web Application |
+| Redirect URIs | `https://your-app.com/auth/synology/callback` (exact match) |
+| Scopes | `openid`, `email`, `groups` |
 
-### Step 3: Create OAuth Application
+Save, then copy the **Client ID** and **Client Secret**.
 
-1. Go to **Application Portal** tab
-2. Click **Create** > **OAuth 2.0 Client**
-3. Fill in the form:
+### 4. Groups
 
-   | Field | Value |
-   |-------|-------|
-   | **Name** | Your application name (e.g., "Laravel App") |
-   | **Application Type** | Web Application |
-   | **Redirect URIs** | `https://your-app.com/auth/synology/callback` |
-   | **Scopes** | openid, email, groups |
+Under **Control Panel → User & Group**, Synology has two built-in groups,
+`administrators` and `users`. Create more as needed and assign users. Group names
+appear bare without Domain/LDAP, or with an `@domain` suffix when LDAP is
+configured (see [SYNOLOGY_QUIRKS.md](SYNOLOGY_QUIRKS.md#4-groups-format-depends-on-ldap)).
 
-4. Click **Save**
-5. **Copy the Client ID and Client Secret** (you'll need these for Laravel)
+## Laravel configuration
 
-### Step 4: Configure User Groups
-
-1. Open **Control Panel** > **User & Group**
-2. Go to **Group** tab
-3. Synology has two default groups:
-   - `administrators` - For administrators (built-in)
-   - `users` - For regular users (built-in)
-4. Create additional groups as needed (e.g., `developers`, `managers`)
-5. Assign users to appropriate groups
-
----
-
-## Laravel Environment Configuration
-
-### Step 1: Install Package
+Install and publish the config:
 
 ```bash
 composer require deroy2112/laravel-synology-sso
 php artisan synology-sso:install
 ```
 
-### Step 2: Configure Environment Variables
-
-> **💡 Tip:** To find your `SYNOLOGY_SSO_HOST` value:
-> - Open **DSM** > **SSO Server** > **Services** > **OIDC**
-> - Copy the **Well-Known URL**
-> - Remove `/.well-known/openid-configuration` from the end
-> - Use the remaining URL (e.g., `https://sso.example.com/webman/sso`)
-
-Add to your `.env` file:
+Set the environment variables (the rest have defaults in
+`config/synology-sso.php`):
 
 ```env
-# Required: Synology SSO Host
 SYNOLOGY_SSO_HOST=https://sso.example.com/webman/sso
-
-# Required: OAuth Credentials (from Synology SSO Server)
-SYNOLOGY_SSO_CLIENT_ID=your-client-id-here
-SYNOLOGY_SSO_CLIENT_SECRET=your-client-secret-here
-
-# Required: Redirect URI (must match Synology SSO configuration exactly)
+SYNOLOGY_SSO_CLIENT_ID=your-client-id
+SYNOLOGY_SSO_CLIENT_SECRET=your-client-secret
 SYNOLOGY_SSO_REDIRECT_URI="${APP_URL}/auth/synology/callback"
 
-# Optional: Auto-create users on first login (default: true)
+# Optional (defaults shown)
 SYNOLOGY_SSO_AUTO_CREATE_USERS=true
-
-# Optional: Default role for users without group mapping (default: user)
 SYNOLOGY_SSO_DEFAULT_ROLE=user
-
-# Optional: SSL verification (disable only for dev with self-signed certs)
 SYNOLOGY_SSO_VERIFY_SSL=true
-
-# Optional: Cache duration for OIDC discovery and JWKS (seconds, default: 3600)
 SYNOLOGY_SSO_CACHE_DURATION=3600
+SYNOLOGY_SSO_LEEWAY=60
 ```
 
-### Step 3: Verify Configuration
+`SYNOLOGY_SSO_REDIRECT_URI` must match the value registered in Synology exactly
+(protocol, domain, port, path, trailing slash).
 
-Run a quick test:
+## Group-to-role mapping
 
-```bash
-php artisan tinker
->>> config('synology-sso.host')
-=> "https://sso.example.com/webman/sso"
->>> config('synology-sso.client_id')
-=> "your-client-id-here"
-```
+Edit `config/synology-sso.php`. Keys are Synology group names (bare and/or
+`@domain` form); values are one role or an array of roles:
 
----
-
-## Group-to-Role Mapping
-
-### Basic Mapping
-
-Edit `config/synology-sso.php`:
-
-**Without Domain/LDAP (Standard Synology):**
 ```php
 'group_role_mappings' => [
-    'administrators' => 'admin',        // Synology default admin group
-    'users' => 'user',          // Synology default user group
-    'developers' => 'developer', // Custom group
-],
-```
-
-**With Domain/LDAP Integration:**
-```php
-'group_role_mappings' => [
-    'administrators@example.com' => 'admin',       // LDAP admin group
-    'users@example.com' => 'user',         // LDAP user group
-    'developers@example.com' => 'developer', // Custom LDAP group
-],
-```
-
-**Supporting Both (Recommended):**
-```php
-'group_role_mappings' => [
-    // Standard Synology groups (without LDAP)
-    'administrators' => 'admin',
-    'users' => 'user',
-
-    // Domain/LDAP groups (with @domain.com)
+    'administrators'             => 'admin',
+    'users'                      => 'user',
+    'developers'                 => ['developer', 'user'],
+    // Domain/LDAP variants, if configured:
     'administrators@example.com' => 'admin',
-    'users@example.com' => 'user',
+    'users@example.com'          => 'user',
 ],
+
+// Primary role when a user maps to several:
+'role_priority' => ['super-admin', 'admin', 'moderator', 'user'],
+
+// Restrict login to these groups (empty = allow all authenticated users):
+'allowed_groups' => ['administrators', 'users'],
+
+// Role for users matching no group; set null to deny them:
+'default_role' => 'user',
 ```
 
-**Important:**
-- Synology default groups are `administrators` and `users`
-- **@domain.com suffix**: Only present when Domain/LDAP is configured
-- Replace `@example.com` with your actual Domain/LDAP domain
+Keys can also be driven from `.env`, e.g.
+`env('SYNOLOGY_SSO_ADMIN_GROUP', 'administrators') => 'admin'`.
 
-### Multiple Roles per Group
+`GroupRoleMapper` exposes `mapGroupsToRoles()`, `getPrimaryRole()`,
+`getAllRoles()`, `hasAccess()`, and `hasRequiredGroup()`. Laravel has no built-in
+role system, so apply the returned roles with your own (e.g.
+`spatie/laravel-permission`).
+
+## Token lifetime
+
+Synology tokens expire after 180s and there are no refresh tokens. Raise the
+limit on the NAS as described in
+[SYNOLOGY_QUIRKS.md](SYNOLOGY_QUIRKS.md#1-token-lifetime-180s-default).
+
+## User provisioning
+
+`UserProvisioner` finds or creates the local user from the SSO user, honouring
+`auto_create_users` and `user_model`. Point `user_model` at your model if it
+isn't `App\Models\User`:
 
 ```php
-'group_role_mappings' => [
-    // Without Domain/LDAP
-    'administrators' => ['admin', 'user'],
-    'developers' => ['developer', 'user'],
-    'users' => 'user',
-
-    // With Domain/LDAP (optional, if Domain/LDAP is configured)
-    'administrators@example.com' => ['admin', 'user'],
-    'developers@example.com' => ['developer', 'user'],
-    'users@example.com' => 'user',
-],
+'user_model'        => App\Models\User::class,
+'auto_create_users' => true, // false = users must already exist
 ```
 
-### Environment-Based Mapping
+Usage is shown in the [README](../README.md#usage).
 
-For dynamic configuration via `.env`:
-
-```php
-// config/synology-sso.php
-'group_role_mappings' => [
-    env('SYNOLOGY_SSO_ADMIN_GROUP', 'administrators') => 'admin',
-    env('SYNOLOGY_SSO_USER_GROUP', 'users') => 'user',
-],
-```
-
-Then in `.env`:
-
-**Without Domain/LDAP:**
-```env
-SYNOLOGY_SSO_ADMIN_GROUP=administrators
-SYNOLOGY_SSO_USER_GROUP=users
-```
-
-**With Domain/LDAP:**
-```env
-SYNOLOGY_SSO_ADMIN_GROUP=administrators@mycompany.com
-SYNOLOGY_SSO_USER_GROUP=users@mycompany.com
-```
-
-### Role Priority
-
-When users have multiple roles, define priority:
-
-```php
-'role_priority' => [
-    'super-admin',
-    'admin',
-    'moderator',
-    'user',
-],
-```
-
-The first matching role becomes the "primary role".
-
-### Restricting Access by Group
-
-Only allow specific groups:
-
-**Without Domain/LDAP:**
-```php
-'allowed_groups' => [
-    'administrators',  // Synology default admin group
-    'users',   // Synology default user group
-],
-```
-
-**With Domain/LDAP:**
-```php
-'allowed_groups' => [
-    'administrators@example.com',  // LDAP admin group
-    'users@example.com',   // LDAP user group
-],
-```
-
-Users not in these groups will be denied access.
-
-### Deny Users Without Groups
-
-Set `default_role` to `null` to deny access:
-
-```php
-'default_role' => null, // No default role - require group mapping
-```
-
----
-
-## Extending Token Lifetime
-
-**Problem:** Synology SSO tokens expire after 180 seconds by default.
-
-**Solution:** Extend token lifetime via DSM Task Scheduler.
-
-### Automated Script (Recommended)
-
-1. Open **DSM** > **Control Panel** > **Task Scheduler**
-2. Click **Create** > **Scheduled Task** > **User-defined script**
-3. Configure:
-
-   | Setting | Value |
-   |---------|-------|
-   | **Task name** | Extend SSO Token Lifetime |
-   | **User** | root |
-   | **Schedule** | Run on the following date (one-time) |
-
-4. In **Task Settings** > **User-defined script**, paste:
-
-   ```bash
-   #!/bin/bash
-
-   # Check if SSO Server is installed
-   if ! synopkg list | grep -q "SSOServer"; then
-       echo "Error: SSO Server not installed"
-       exit 1
-   fi
-
-   # Backup original config
-   cp /var/packages/SSOServer/etc/oidc-config.json /var/packages/SSOServer/etc/oidc-config.json.bak
-
-   # Extend token lifetime to 30 minutes (1800 seconds)
-   sed -i 's/"ExpAccessToken":180/"ExpAccessToken":1800/g' /var/packages/SSOServer/etc/oidc-config.json
-   sed -i 's/"ExpIdToken":180/"ExpIdToken":1800/g' /var/packages/SSOServer/etc/oidc-config.json
-   sed -i 's/"ExpAuthCode":180/"ExpAuthCode":1800/g' /var/packages/SSOServer/etc/oidc-config.json
-
-   # Restart SSO Server to apply changes
-   synopkg restart SSOServer
-
-   echo "Token lifetime extended to 1800 seconds (30 minutes)"
-   ```
-
-5. Click **OK**
-6. **Run the task immediately** (right-click > Run)
-
-### Manual Method (SSH)
-
-```bash
-# 1. SSH into Synology as root
-ssh admin@your-nas-ip
-sudo -i
-
-# 2. Backup config
-cp /var/packages/SSOServer/etc/oidc-config.json /var/packages/SSOServer/etc/oidc-config.json.bak
-
-# 3. Edit config (replace 180 with 1800)
-vi /var/packages/SSOServer/etc/oidc-config.json
-
-# 4. Restart SSO Server
-synopkg restart SSOServer
-```
-
-### Recommended Values
-
-| Use Case | Seconds | Minutes |
-|----------|---------|---------|
-| Development | 1800 | 30 min |
-| Production (low security) | 1800 | 30 min |
-| Production (medium security) | 900 | 15 min |
-| Production (high security) | 600 | 10 min |
-| Maximum allowed | 1800 | 30 min |
-
-**Note:** Changes persist across reboots but may be reset by DSM updates.
-
----
-
-## Routes Configuration
-
-### Basic Routes
-
-Add to `routes/web.php`:
-
-```php
-use Laravel\Socialite\Facades\Socialite;
-use App\Http\Controllers\Auth\SynologySsoController;
-
-// Redirect to Synology SSO
-Route::get('/auth/synology', function () {
-    return Socialite::driver('synology')->redirect();
-})->name('synology.redirect');
-
-// Handle callback
-Route::get('/auth/synology/callback', function () {
-    $user = Socialite::driver('synology')->user();
-
-    // Handle user authentication (see User Model Setup below)
-
-    return redirect('/dashboard');
-})->name('synology.callback');
-```
-
-### Controller-Based Approach (Recommended)
-
-Create `app/Http/Controllers/Auth/SynologySsoController.php`:
-
-```php
-<?php
-
-namespace App\Http\Controllers\Auth;
-
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Facades\Socialite;
-use Deroy2112\LaravelSynologySso\GroupRoleMapper;
-
-class SynologySsoController extends Controller
-{
-    public function redirect()
-    {
-        return Socialite::driver('synology')->redirect();
-    }
-
-    public function callback(GroupRoleMapper $mapper)
-    {
-        try {
-            $ssoUser = Socialite::driver('synology')->user();
-
-            // Check if user has access
-            if (!$mapper->hasAccess($ssoUser->groups ?? [])) {
-                abort(403, 'You do not have permission to access this application.');
-            }
-
-            // Find or create user
-            $user = User::updateOrCreate(
-                ['email' => $ssoUser->email],
-                [
-                    'name' => $ssoUser->name,
-                    'synology_id' => $ssoUser->id,
-                ]
-            );
-
-            // Assign roles
-            $roles = $mapper->mapGroupsToRoles($ssoUser->groups ?? []);
-            $user->syncRoles($roles); // If using spatie/laravel-permission
-
-            // Log in
-            Auth::login($user, true);
-
-            return redirect()->intended('/dashboard');
-
-        } catch (\Exception $e) {
-            report($e);
-            return redirect('/login')->with('error', 'Authentication failed. Please try again.');
-        }
-    }
-
-    public function logout()
-    {
-        Auth::logout();
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
-
-        return redirect('/');
-    }
-}
-```
-
-Routes:
-
-```php
-Route::get('/auth/synology', [SynologySsoController::class, 'redirect'])->name('synology.redirect');
-Route::get('/auth/synology/callback', [SynologySsoController::class, 'callback'])->name('synology.callback');
-Route::post('/logout', [SynologySsoController::class, 'logout'])->name('logout');
-```
-
-### With Rate Limiting
-
-```php
-Route::middleware(['throttle:10,1'])->group(function () {
-    Route::get('/auth/synology', [SynologySsoController::class, 'redirect']);
-    Route::get('/auth/synology/callback', [SynologySsoController::class, 'callback']);
-});
-```
-
----
-
-## User Model Setup
-
-### Database Migration
-
-Add Synology ID column:
-
-```bash
-php artisan make:migration add_synology_fields_to_users_table
-```
-
-```php
-public function up()
-{
-    Schema::table('users', function (Blueprint $table) {
-        $table->string('synology_id')->nullable()->unique();
-    });
-}
-```
-
-```bash
-php artisan migrate
-```
-
-### User Model
-
-Update `app/Models/User.php`:
-
-```php
-protected $fillable = [
-    'name',
-    'email',
-    'synology_id',
-];
-```
-
-### With Role Management (spatie/laravel-permission)
-
-```bash
-composer require spatie/laravel-permission
-php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
-php artisan migrate
-```
-
-Update controller callback:
-
-```php
-$user->syncRoles($roles); // Sync roles from group mappings
-```
-
----
-
-## Advanced Configuration
-
-### Custom User Model
-
-```php
-// config/synology-sso.php
-'user_model' => App\Models\CustomUser::class,
-```
-
-### Disable Auto-Create Users
-
-```php
-'auto_create_users' => false,
-```
-
-Users must exist before SSO login.
-
-### Custom Scopes
-
-```php
-// In your controller
-return Socialite::driver('synology')
-    ->scopes(['openid', 'email', 'groups', 'profile'])
-    ->redirect();
-```
-
-### Development with Self-Signed Certificates
+## Development with self-signed certificates
 
 ```env
 SYNOLOGY_SSO_VERIFY_SSL=false
 ```
 
-**⚠️ Never use in production!**
-
----
+Never disable SSL verification in production.
 
 ## Troubleshooting
 
-### Issue: "redirect_uri_mismatch"
-
-**Cause:** Redirect URI doesn't match Synology SSO configuration exactly.
-
-**Solution:**
-1. Check `.env`: `SYNOLOGY_SSO_REDIRECT_URI`
-2. Verify in Synology SSO Server > Application Portal
-3. Ensure exact match (including trailing slash, protocol, port)
-
-### Issue: "Invalid state"
-
-**Cause:** CSRF state parameter mismatch (common with multiple tabs).
-
-**Solution:**
-- Ensure cookies are enabled
-- Check session configuration
-- Don't open multiple login tabs
-
-### Issue: "Token expired"
-
-**Cause:** 180-second default token lifetime.
-
-**Solution:** [Extend token lifetime](#extending-token-lifetime)
-
-### Issue: "SSL certificate problem"
-
-**Cause:** Self-signed certificate in development.
-
-**Solution:**
-```env
-SYNOLOGY_SSO_VERIFY_SSL=false
-```
-
-### Issue: User not getting correct role
-
-**Cause:** Group mapping mismatch.
-
-**Solution:**
-1. Check user's groups in Synology: Control Panel > User & Group
-2. Verify group format:
-   - Without Domain/LDAP: `administrators`, `users`
-   - With Domain/LDAP: `administrators@example.com`, `users@example.com`
-3. Check `config/synology-sso.php` mappings match your setup
-4. Remember: Synology default groups are `administrators` and `users` (not "administrators")
-
-### Debug Mode
-
-Enable Laravel debug mode:
-
-```env
-APP_DEBUG=true
-```
-
-Check logs:
-```bash
-tail -f storage/logs/laravel.log
-```
-
----
-
-## Next Steps
-
-- Review [SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md)
-- Read [SYNOLOGY_QUIRKS.md](SYNOLOGY_QUIRKS.md)
-- Check [README.md](../README.md) for examples
-
----
-
-**Need help?** Open an issue: https://github.com/Deroy2112/laravel-synology-sso/issues
+- **`redirect_uri_mismatch`** — the request URI doesn't exactly match the one
+  registered in Application Portal (check protocol, port, trailing slash).
+- **`Invalid state`** — CSRF state mismatch; ensure cookies/sessions work and
+  avoid multiple concurrent login tabs.
+- **`Token expired`** — the 180s default; extend the lifetime (see quirks).
+- **SSL certificate problem** — self-signed cert in dev; set
+  `SYNOLOGY_SSO_VERIFY_SSL=false` for development only.
+- **Wrong role** — verify the user's groups in Control Panel → User & Group and
+  that the group format (bare vs `@domain`) matches your `group_role_mappings`.

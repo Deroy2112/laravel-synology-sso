@@ -1,32 +1,18 @@
 # Synology SSO API Response Examples
 
-Real-world response examples from Synology SSO Server endpoints. All sensitive data (domains, client IDs, keys) has been sanitized.
-
-**Purpose:** Help developers understand exact response structures for debugging and integration.
-
----
-
-## Table of Contents
-
-1. [OIDC Discovery](#1-oidc-discovery)
-2. [JWKS Endpoint](#2-jwks-endpoint)
-3. [Token Endpoint](#3-token-endpoint)
-4. [UserInfo Endpoint](#4-userinfo-endpoint)
-5. [Authorization Errors](#5-authorization-errors)
-6. [Token Errors](#6-token-errors)
-7. [UserInfo Errors](#7-userinfo-errors)
-
----
+Real responses from Synology SSO Server endpoints (DSM 7.x, SSO Server 3.0.6),
+with domains, client IDs and keys sanitized. Use them to understand the exact
+structures when debugging or integrating.
 
 ## 1. OIDC Discovery
 
-### Request
 ```http
 GET /.well-known/openid-configuration HTTP/1.1
 Host: sso.example.com
 ```
 
-### Response (200 OK)
+Response (200 OK):
+
 ```json
 {
   "authorization_endpoint": "https://sso.example.com/webman/sso/SSOOauth.cgi",
@@ -76,35 +62,24 @@ Host: sso.example.com
 }
 ```
 
-### Key Observations
+Notes:
 
-**Supported Features:**
-- ✅ PKCE (S256 and plain methods)
-- ✅ Authorization Code Flow
-- ✅ Implicit Flow (deprecated, not recommended)
-- ✅ Three scopes: `openid`, `email`, `groups`
-- ✅ RS256 signature for ID tokens
-
-**Missing Features:**
-- ❌ No `refresh_token` in `grant_types_supported`
-- ❌ No `offline_access` in `scopes_supported`
-- ❌ No `profile`, `address`, `phone` scopes
-
-**Quirk:**
-- `issuer` field has `/webman/sso` suffix, but **NOT** on the actual endpoints
-- Endpoints do NOT include `/webman/sso` prefix (just `/webman/sso/SSOOauth.cgi`)
-
----
+- Supports PKCE (`S256` and `plain`), authorization code and implicit flows, the
+  three scopes `openid`/`email`/`groups`, and RS256-signed ID tokens.
+- No `refresh_token` in `grant_types_supported`, no `offline_access` in
+  `scopes_supported`, and no `profile`/`address`/`phone` scopes.
+- `issuer` carries the `/webman/sso` path — that value (with `/webman/sso`) is
+  what you set as `SYNOLOGY_SSO_HOST`. Endpoints live under it as `…/webman/sso/SSO*.cgi`.
 
 ## 2. JWKS Endpoint
 
-### Request
 ```http
 GET /.well-known/jwks HTTP/1.1
 Host: sso.example.com
 ```
 
-### Response (200 OK)
+Response (200 OK):
+
 ```json
 {
   "keys": [
@@ -120,41 +95,19 @@ Host: sso.example.com
 }
 ```
 
-### Structure
-
-| Field | Description | Example Value |
-|-------|-------------|---------------|
+| Field | Description | Example |
+|-------|-------------|---------|
 | `alg` | Algorithm | `RS256` |
-| `e` | RSA public exponent | `AQAB` (65537 in base64) |
+| `e` | RSA public exponent | `AQAB` (65537) |
 | `kid` | Key ID (for matching) | `synology-sso-key-1` |
 | `kty` | Key type | `RSA` |
-| `n` | RSA modulus (base64url) | Long base64 string |
-| `use` | Public key use | `sig` (signature) |
-
-### Usage
-
-```php
-use Firebase\JWT\JWT;
-use Firebase\JWT\JWK;
-
-// Fetch JWKS
-$jwks = json_decode(file_get_contents('https://sso.example.com/.well-known/jwks'), true);
-
-// Parse keys
-$keys = JWK::parseKeySet($jwks);
-
-// Verify ID token
-$idToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...';
-$decoded = JWT::decode($idToken, $keys);
-```
-
----
+| `n` | RSA modulus (base64url) | long base64 string |
+| `use` | Public key use | `sig` |
 
 ## 3. Token Endpoint
 
-### Successful Token Exchange
+Request:
 
-#### Request
 ```http
 POST /webman/sso/SSOAccessToken.cgi HTTP/1.1
 Host: sso.example.com
@@ -168,17 +121,19 @@ grant_type=authorization_code
 &code_verifier=a1b2c3d4e5f6...
 ```
 
-#### Response (200 OK)
+Response (200 OK):
+
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VybmFtZSIsImlzcyI6Imh0dHBzOi8vc3NvLmV4YW1wbGUuY29tL3dlYm1hbi9zc28iLCJhdWQiOiJ5b3VyLWNsaWVudC1pZCIsImV4cCI6MTczMDAwMDE4MCwiaWF0IjoxNzMwMDAwMDAwfQ.signature...",
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "Bearer",
   "expires_in": 180,
-  "id_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN5bm9sb2d5LXNzby1rZXktMSJ9.eyJzdWIiOiJ1c2VybmFtZSIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJncm91cHMiOlsiYWRtaW5zIiwidXNlcnMiXSwiaXNzIjoiaHR0cHM6Ly9zc28uZXhhbXBsZS5jb20vd2VibWFuL3NzbyIsImF1ZCI6InlvdXItY2xpZW50LWlkIiwiZXhwIjoxNzMwMDAwMTgwLCJpYXQiOjE3MzAwMDAwMDAsIm5vbmNlIjoiYWJjMTIzIn0.signature..."
+  "id_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN5bm9sb2d5LXNzby1rZXktMSJ9..."
 }
 ```
 
-### ID Token Decoded (Header)
+ID token header:
+
 ```json
 {
   "alg": "RS256",
@@ -187,7 +142,8 @@ grant_type=authorization_code
 }
 ```
 
-### ID Token Decoded (Payload)
+ID token payload:
+
 ```json
 {
   "sub": "username",
@@ -202,46 +158,40 @@ grant_type=authorization_code
 }
 ```
 
-### Token Response Fields
+Token response fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `access_token` | JWT | Bearer token for UserInfo endpoint |
+| `access_token` | JWT | Bearer token for the UserInfo endpoint |
 | `token_type` | String | Always `Bearer` |
-| `expires_in` | Integer | Lifetime in seconds (default: 180) |
+| `expires_in` | Integer | Lifetime in seconds (default 180) |
 | `id_token` | JWT | OIDC ID token with user claims |
-| `refresh_token` | - | ❌ NOT PRESENT (not supported) |
+| `refresh_token` | — | Not present (not supported) |
 
-### ID Token Claims
+ID token claims:
 
 | Claim | Required | Description |
 |-------|----------|-------------|
-| `sub` | ✅ Yes | Subject (username) |
-| `iss` | ✅ Yes | Issuer (SSO server URL) |
-| `aud` | ✅ Yes | Audience (your client_id) |
-| `exp` | ✅ Yes | Expiration timestamp |
-| `iat` | ✅ Yes | Issued at timestamp |
-| `nonce` | ⚠️ If sent | Echo of authorization nonce |
-| `email` | ❌ No | User email (if `email` scope) |
-| `email_verified` | ❌ No | Email verification status |
-| `groups` | ❌ No | Groups array (if `groups` scope) |
-
----
+| `sub` | Yes | Subject (username) |
+| `iss` | Yes | Issuer (SSO server URL) |
+| `aud` | Yes | Audience (your `client_id`) |
+| `exp` | Yes | Expiration timestamp |
+| `iat` | Yes | Issued-at timestamp |
+| `nonce` | If sent | Echo of the authorization nonce |
+| `email` | No | User email (with `email` scope) |
+| `email_verified` | No | Email verification status |
+| `groups` | No | Groups array (with `groups` scope) |
 
 ## 4. UserInfo Endpoint
 
-### Successful UserInfo Request
-
-#### Request
 ```http
 GET /webman/sso/SSOUserInfo.cgi HTTP/1.1
 Host: sso.example.com
 Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-#### Response (200 OK)
+Response with `openid email groups`:
 
-**With `openid email groups` scopes:**
 ```json
 {
   "sub": "username",
@@ -251,14 +201,16 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
-**With only `openid` scope:**
+With only `openid`:
+
 ```json
 {
   "sub": "username"
 }
 ```
 
-**With Domain/LDAP enabled:**
+With Domain/LDAP enabled:
+
 ```json
 {
   "sub": "username",
@@ -268,377 +220,115 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
-### UserInfo Fields by Scope
-
-| Scope | Fields Included |
-|-------|-----------------|
+| Scope | Fields |
+|-------|--------|
 | `openid` | `sub` |
 | `openid email` | `sub`, `email`, `email_verified` |
 | `openid groups` | `sub`, `groups` |
 | `openid email groups` | `sub`, `email`, `email_verified`, `groups` |
 
----
-
 ## 5. Authorization Errors
 
-### Error: Missing client_id
+**Missing `client_id`** — request omits `client_id`. Response (302):
 
-#### Request
 ```
-GET /webman/sso/SSOOauth.cgi
-  ?response_type=code
-  &redirect_uri=https://app.example.com/callback
-  &scope=openid
+https://app.example.com/callback?error=invalid_request&error_description=Missing+required+parameter:+client_id&state=xyz
 ```
 
-#### Response (302 Redirect)
-```
-https://app.example.com/callback
-  ?error=invalid_request
-  &error_description=Missing+required+parameter:+client_id
-  &state=xyz
-```
+**Invalid `redirect_uri`** — response is 400 HTML (not redirected, since the URI
+cannot be trusted):
 
-### Error: Invalid redirect_uri
-
-#### Request
-```
-GET /webman/sso/SSOOauth.cgi
-  ?response_type=code
-  &client_id=your-client-id
-  &redirect_uri=https://wrong-domain.com/callback
-  &scope=openid
-```
-
-#### Response (400 Bad Request)
 ```html
-<html>
-<head><title>Error</title></head>
-<body>
-<h1>Invalid redirect URI</h1>
-</body>
-</html>
+<html><head><title>Error</title></head><body><h1>Invalid redirect URI</h1></body></html>
 ```
 
-**Note:** When redirect_uri is invalid, error is NOT redirected (cannot trust URI).
+**Unsupported `response_type`** (e.g. `token`). Response (302):
 
-### Error: Unsupported response_type
-
-#### Request
 ```
-GET /webman/sso/SSOOauth.cgi
-  ?response_type=token
-  &client_id=your-client-id
-  &redirect_uri=https://app.example.com/callback
+https://app.example.com/callback?error=unsupported_response_type&error_description=Response+type+not+supported&state=xyz
 ```
 
-#### Response (302 Redirect)
-```
-https://app.example.com/callback
-  ?error=unsupported_response_type
-  &error_description=Response+type+not+supported
-  &state=xyz
-```
+**Invalid scope** (e.g. `openid profile address`). Response (302):
 
-### Error: Invalid scope
-
-#### Request
 ```
-GET /webman/sso/SSOOauth.cgi
-  ?response_type=code
-  &client_id=your-client-id
-  &redirect_uri=https://app.example.com/callback
-  &scope=openid+profile+address
+https://app.example.com/callback?error=invalid_scope&error_description=Unsupported+scope&state=xyz
 ```
-
-#### Response (302 Redirect)
-```
-https://app.example.com/callback
-  ?error=invalid_scope
-  &error_description=Unsupported+scope
-  &state=xyz
-```
-
----
 
 ## 6. Token Errors
 
-### Error: Invalid client_id
+All return HTTP 400 with a JSON `error`:
 
-#### Request
-```http
-POST /webman/sso/SSOAccessToken.cgi HTTP/1.1
-Content-Type: application/x-www-form-urlencoded
+| Condition | Response |
+|-----------|----------|
+| Invalid `client_id` | `{"error": "invalid_app_id"}` |
+| Invalid `client_secret` | `{"error": "invalid_client"}` |
+| Invalid/expired/reused auth code | `{"error": "invalid_grant"}` |
+| Refresh grant (`grant_type=refresh_token`) | `{"error": "invalid request"}` |
+| Missing `code` parameter | `{"error": "invalid_request"}` |
 
-grant_type=authorization_code
-&code=abc123
-&client_id=wrong-client-id
-&client_secret=your-secret
-```
+`invalid_grant` causes: code already used, code expired (180s default), code
+never existed, `redirect_uri` mismatch, or PKCE verifier mismatch.
 
-#### Response (400 Bad Request)
-```json
-{
-  "error": "invalid_app_id"
-}
-```
-
-### Error: Invalid client_secret
-
-#### Request
-```http
-POST /webman/sso/SSOAccessToken.cgi HTTP/1.1
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=authorization_code
-&code=abc123
-&client_id=your-client-id
-&client_secret=wrong-secret
-```
-
-#### Response (400 Bad Request)
-```json
-{
-  "error": "invalid_client"
-}
-```
-
-### Error: Invalid/Expired Authorization Code
-
-#### Request
-```http
-POST /webman/sso/SSOAccessToken.cgi HTTP/1.1
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=authorization_code
-&code=expired-or-invalid-code
-&client_id=your-client-id
-&client_secret=your-secret
-```
-
-#### Response (400 Bad Request)
-```json
-{
-  "error": "invalid_grant"
-}
-```
-
-**Common Causes:**
-- Authorization code already used
-- Authorization code expired (180s default)
-- Authorization code never existed
-- redirect_uri mismatch
-- PKCE verifier mismatch
-
-### Error: Unsupported Grant Type
-
-#### Request
-```http
-POST /webman/sso/SSOAccessToken.cgi HTTP/1.1
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=refresh_token
-&refresh_token=abc123
-&client_id=your-client-id
-&client_secret=your-secret
-```
-
-#### Response (400 Bad Request)
-```json
-{
-  "error": "invalid request"
-}
-```
-
-**Note:** Synology does NOT support `refresh_token` grant type.
-
-### Error: Missing Required Parameter
-
-#### Request
-```http
-POST /webman/sso/SSOAccessToken.cgi HTTP/1.1
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=authorization_code
-&client_id=your-client-id
-&client_secret=your-secret
-```
-
-#### Response (400 Bad Request)
-```json
-{
-  "error": "invalid_request"
-}
-```
-
-**Cause:** Missing `code` parameter.
-
----
+Note: the refresh-grant error is the literal string `invalid request` (with a
+space), distinct from `invalid_request`.
 
 ## 7. UserInfo Errors
 
-### Error: Invalid Access Token
+| Condition | Status | Response |
+|-----------|--------|----------|
+| Invalid access token | 400 | `{"error": "invalid_token"}` |
+| Missing `Authorization` header | 401 | `{"error": "invalid_request"}` |
+| Expired access token | 401 | `{"error": "invalid_token"}` |
+| Wrong HTTP method (only `GET` allowed) | 405 | `{"error": "invalid_request"}` |
 
-#### Request
-```http
-GET /webman/sso/SSOUserInfo.cgi HTTP/1.1
-Authorization: Bearer invalid-token-here
-```
+## Error formats
 
-#### Response (400 Bad Request)
+Synology uses two shapes:
+
 ```json
-{
-  "error": "invalid_token"
-}
+{ "error": "error_code", "error_description": "Human-readable description" }
 ```
 
-### Error: Missing Authorization Header
-
-#### Request
-```http
-GET /webman/sso/SSOUserInfo.cgi HTTP/1.1
-```
-
-#### Response (401 Unauthorized)
 ```json
-{
-  "error": "invalid_request"
-}
+{ "error": "error_code" }
 ```
 
-### Error: Expired Access Token
+Most responses omit `error_description`.
 
-#### Request
-```http
-GET /webman/sso/SSOUserInfo.cgi HTTP/1.1
-Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
-```
+## HTTP status codes
 
-#### Response (401 Unauthorized)
-```json
-{
-  "error": "invalid_token"
-}
-```
-
-**Note:** Default token lifetime is 180 seconds. Extend via config file (see SYNOLOGY_QUIRKS.md).
-
-### Error: Wrong HTTP Method
-
-#### Request
-```http
-POST /webman/sso/SSOUserInfo.cgi HTTP/1.1
-Authorization: Bearer valid-token
-```
-
-#### Response (405 Method Not Allowed)
-```json
-{
-  "error": "invalid_request"
-}
-```
-
-**Note:** UserInfo endpoint only accepts `GET` requests.
-
----
-
-## Common Error Response Format
-
-Synology SSO uses two error response formats:
-
-### OAuth 2.0 Standard Format
-```json
-{
-  "error": "error_code",
-  "error_description": "Human-readable description"
-}
-```
-
-### Synology-Specific Format
-```json
-{
-  "error": "error_code"
-}
-```
-
-**No `error_description` field in most responses.**
-
----
-
-## HTTP Status Codes
-
-| Status | Meaning | Common Errors |
+| Status | Meaning | Common errors |
 |--------|---------|---------------|
-| 200 | Success | - |
+| 200 | Success | — |
 | 302 | Redirect | Authorization errors (via query params) |
 | 400 | Bad Request | `invalid_request`, `invalid_grant`, `invalid_client` |
 | 401 | Unauthorized | `invalid_token` (expired/missing token) |
 | 405 | Method Not Allowed | Wrong HTTP method |
 | 500 | Server Error | SSO Server internal error |
 
----
+## Debugging
 
-## Debugging Tips
-
-### Decode JWT Tokens (Without Verification)
-
-**Online:** https://jwt.io
-
-**Command Line:**
-```bash
-echo "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VybmFtZSJ9.sig" | \
-  cut -d. -f2 | \
-  base64 -d | \
-  jq .
-```
-
-### Test OIDC Discovery
+Inspect the endpoints directly:
 
 ```bash
 curl -s https://sso.example.com/.well-known/openid-configuration | jq .
-```
-
-### Test JWKS
-
-```bash
 curl -s https://sso.example.com/.well-known/jwks | jq .
-```
-
-### Test UserInfo (With Valid Token)
-
-```bash
 curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   https://sso.example.com/webman/sso/SSOUserInfo.cgi | jq .
 ```
 
-### Common Response Issues
+Decode a JWT payload without verifying:
 
-**Issue:** `invalid_token` immediately after token exchange
-- **Cause:** Clock skew between servers
-- **Solution:** Check server time sync
+```bash
+echo "eyJ...payload..." | cut -d. -f2 | base64 -d | jq .
+```
 
-**Issue:** `invalid_grant` on token exchange
-- **Cause:** Authorization code expired (default: 180s)
-- **Solution:** Reduce time between authorization and token exchange
+Common issues:
 
-**Issue:** Empty `groups` array
-- **Cause:** User not assigned to any groups in Synology
-- **Solution:** Assign user to groups in DSM > Control Panel > User & Group
-
-**Issue:** Groups have `@domain.com` suffix unexpectedly
-- **Cause:** Domain/LDAP integration enabled
-- **Solution:** Update group mappings in config to include domain suffix
-
----
-
-## Additional Resources
-
-- **DEVELOPER_REFERENCE.md** - Integration patterns and code examples
-- **SYNOLOGY_QUIRKS.md** - Known limitations and workarounds
-- **SECURITY_CHECKLIST.md** - Security best practices
-
----
-
-**Document Version:** 1.0.0
-**Last Updated:** 2025-11-02
-**Based On:** Synology DSM 7.x, SSO Server 3.0.6
+- `invalid_token` right after token exchange → clock skew; check server time sync.
+- `invalid_grant` on exchange → auth code expired (180s); shorten the time between
+  authorization and exchange.
+- Empty `groups` array → user is in no Synology groups (assign under Control Panel
+  → User & Group).
+- Unexpected `@domain.com` suffix on groups → Domain/LDAP is enabled; include the
+  suffix in your group mappings.
