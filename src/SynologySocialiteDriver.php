@@ -265,6 +265,11 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
 
         $leeway = (int) config('synology-sso.leeway', self::DEFAULT_CLOCK_SKEW_LEEWAY);
 
+        // JWT::$leeway is global mutable state on the firebase/php-jwt library;
+        // restore it afterwards so we never leak our value into other JWT usage
+        // in the same process (queue workers, tests).
+        $previousLeeway = JWT::$leeway;
+
         try {
             // Parse and verify JWT signature with JWKS, tolerating minor clock skew
             JWT::$leeway = $leeway;
@@ -278,6 +283,8 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
             return $claims;
         } catch (\Exception $e) {
             throw new InvalidIdTokenException('ID token verification failed: ' . $e->getMessage(), 0, $e);
+        } finally {
+            JWT::$leeway = $previousLeeway;
         }
     }
 

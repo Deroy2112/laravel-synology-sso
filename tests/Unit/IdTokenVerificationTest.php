@@ -6,6 +6,7 @@ use Deroy2112\LaravelSynologySso\Exceptions\InvalidIdTokenException;
 use Deroy2112\LaravelSynologySso\Tests\Support\RsaTestKey;
 use Deroy2112\LaravelSynologySso\Tests\Support\TestableSynologyDriver;
 use Deroy2112\LaravelSynologySso\Tests\TestCase;
+use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
@@ -50,6 +51,14 @@ class IdTokenVerificationTest extends TestCase
         );
     }
 
+    protected function tearDown(): void
+    {
+        // Reset the library's global leeway so it cannot leak between tests.
+        JWT::$leeway = 0;
+
+        parent::tearDown();
+    }
+
     /**
      * @param array<string, mixed> $overrides
      * @return array<string, mixed>
@@ -76,6 +85,31 @@ class IdTokenVerificationTest extends TestCase
         $this->assertSame('synology-user-123', $claims['sub']);
         $this->assertSame('user@example.com', $claims['email']);
         $this->assertSame(self::ISSUER, $claims['iss']);
+    }
+
+    #[Test]
+    public function it_restores_the_global_jwt_leeway_after_a_successful_verification(): void
+    {
+        JWT::$leeway = 999;
+
+        $this->driver->callVerifyIdToken($this->key->sign($this->claims()));
+
+        $this->assertSame(999, JWT::$leeway);
+    }
+
+    #[Test]
+    public function it_restores_the_global_jwt_leeway_even_when_verification_fails(): void
+    {
+        JWT::$leeway = 999;
+
+        try {
+            $this->driver->callVerifyIdToken($this->key->sign($this->claims(['iss' => 'https://evil.example.com'])));
+            $this->fail('Expected InvalidIdTokenException');
+        } catch (InvalidIdTokenException) {
+            // expected
+        }
+
+        $this->assertSame(999, JWT::$leeway);
     }
 
     #[Test]

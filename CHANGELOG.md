@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Restore the global `JWT::$leeway` after ID-token verification, so the configured leeway can't leak into other firebase/php-jwt usage in the same process (queue workers, tests).
+
 ## [1.2.0] - 2026-06-21
 
 ### Added
