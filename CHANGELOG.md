@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-21
+
 ### Added
 - OIDC nonce on the authorization request, verified against the ID token to prevent replay.
 - `UserProvisioner` service for just-in-time user provisioning; `auto_create_users` and `user_model` are now functional.
 - Configurable clock-skew `leeway` for the ID token's time-based claims (`exp`, `iat`).
+- Laravel 13 support.
 
 ### Changed
 - The token exchange throws `MissingPkceVerifierException` instead of a generic `RuntimeException` when the session verifier is missing.
+- Require `firebase/php-jwt` `^7.0` (was `^6.0`).
+
+### Removed
+- Laravel 11 support (end of life).
 
 ### Fixed
 - `verify_ssl` is now honoured on every HTTP request (OIDC discovery, JWKS, token, userinfo). It was previously ignored, so disabling it for self-signed certificates had no effect.
@@ -22,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Verify the `azp` claim references this client when present.
+- Upgrade `firebase/php-jwt` to `^7.0`, resolving CVE-2025-45769 (weak encryption in versions below 7.0.0).
 
 ## [1.1.0] - 2025-11-14
 
@@ -91,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SSL certificate verification (configurable)
 - Secure session-based token storage
 
-[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Deroy2112/laravel-synology-sso/compare/v1.0.1...v1.0.2
