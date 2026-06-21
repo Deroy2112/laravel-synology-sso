@@ -29,4 +29,9 @@ final class TestableSynologyDriver extends SynologySocialiteDriver
     {
         return $this->httpClientOptions();
     }
+
+    public function callGetAuthUrl(string $state): string
+    {
+        return $this->getAuthUrl($state);
+    }
 }

@@ -59,6 +59,11 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
     private const DEFAULT_CLOCK_SKEW_LEEWAY = 60;
 
     /**
+     * Number of random bytes used to build the OIDC nonce.
+     */
+    private const NONCE_BYTES = 16;
+
+    /**
      * Guzzle options applied to every request the driver makes.
      *
      * @return array<string, mixed>
@@ -140,9 +145,14 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
         $pkce = $this->generatePkce();
         session(['synology_sso_code_verifier' => $pkce['verifier']]);
 
+        // Generate and store nonce for ID token replay protection
+        $nonce = bin2hex(random_bytes(self::NONCE_BYTES));
+        session(['synology_sso_nonce' => $nonce]);
+
         return $this->buildAuthUrlFromBase($config['authorization_endpoint'], $state) .
             '&code_challenge=' . $pkce['challenge'] .
-            '&code_challenge_method=S256';
+            '&code_challenge_method=S256' .
+            '&nonce=' . $nonce;
     }
 
     /**
@@ -260,6 +270,7 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
 
             // Verify claims
             $this->verifyIdTokenClaims($claims, $config, $leeway);
+            $this->verifyNonce($claims);
 
             return $claims;
         } catch (\Exception $e) {
@@ -308,6 +319,31 @@ class SynologySocialiteDriver extends AbstractProvider implements ProviderInterf
         // Verify subject
         if (!isset($claims['sub'])) {
             throw new InvalidIdTokenException('Missing subject claim');
+        }
+    }
+
+    /**
+     * Verify the ID token nonce against the value stored during the auth request.
+     *
+     * Only enforced when a nonce was issued for this flow (i.e. the interactive
+     * redirect flow); the stored nonce is single-use and cleared after checking.
+     *
+     * @param array $claims
+     * @return void
+     * @throws InvalidIdTokenException
+     */
+    protected function verifyNonce(array $claims): void
+    {
+        $expectedNonce = session('synology_sso_nonce');
+
+        if ($expectedNonce === null) {
+            return;
+        }
+
+        session()->forget('synology_sso_nonce');
+
+        if (!isset($claims['nonce']) || !hash_equals($expectedNonce, (string) $claims['nonce'])) {
+            throw new InvalidIdTokenException('Invalid nonce');
         }
     }
 

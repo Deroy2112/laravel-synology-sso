@@ -199,6 +199,54 @@ class IdTokenVerificationTest extends TestCase
     }
 
     #[Test]
+    public function it_issues_a_nonce_in_the_auth_url_and_stores_it_in_session(): void
+    {
+        $url = $this->driver->callGetAuthUrl('test-state');
+
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertArrayHasKey('nonce', $query);
+        $this->assertNotEmpty($query['nonce']);
+        $this->assertSame($query['nonce'], session('synology_sso_nonce'));
+        $this->assertSame('S256', $query['code_challenge_method']);
+    }
+
+    #[Test]
+    public function it_accepts_a_token_with_a_matching_nonce(): void
+    {
+        session(['synology_sso_nonce' => 'expected-nonce']);
+        $token = $this->key->sign($this->claims(['nonce' => 'expected-nonce']));
+
+        $claims = $this->driver->callVerifyIdToken($token);
+
+        $this->assertSame('synology-user-123', $claims['sub']);
+    }
+
+    #[Test]
+    public function it_rejects_a_token_with_a_mismatched_nonce(): void
+    {
+        session(['synology_sso_nonce' => 'expected-nonce']);
+        $token = $this->key->sign($this->claims(['nonce' => 'attacker-nonce']));
+
+        $this->expectException(InvalidIdTokenException::class);
+        $this->expectExceptionMessage('Invalid nonce');
+
+        $this->driver->callVerifyIdToken($token);
+    }
+
+    #[Test]
+    public function it_rejects_a_token_missing_the_nonce_when_one_was_issued(): void
+    {
+        session(['synology_sso_nonce' => 'expected-nonce']);
+        $token = $this->key->sign($this->claims());
+
+        $this->expectException(InvalidIdTokenException::class);
+        $this->expectExceptionMessage('Invalid nonce');
+
+        $this->driver->callVerifyIdToken($token);
+    }
+
+    #[Test]
     public function it_rejects_a_token_signed_by_an_unknown_key(): void
     {
         $foreignKey = new RsaTestKey('attacker-key');
